@@ -1,5 +1,8 @@
 # many_faces_elastic
 
+**Canonical GitHub repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic) — default branch **`main`**.  
+Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTPS: `https://github.com/01laky/many_faces_elastic.git`). In the **many_faces_main** monorepo this tree is typically checked out as the `many_faces_elastic/` git submodule ([monorepo submodule guide](https://github.com/01laky/many_faces_main/blob/main/docs/guides/git-submodules.md)).
+
 Optional **Elasticsearch** stack plus a colocated **Go gRPC search-worker** for the Many Faces monorepo. Together they provide a **read-optimized search projection** (full-text, facets, autocomplete later). **PostgreSQL remains the system of record**; this repository ships Docker tooling, the worker source, and the **canonical `.proto`** contract consumed by **`many_faces_backend`** (C# gRPC client) and eventually **`many_faces_ai`** (Python client).
 
 ## Image and licensing
