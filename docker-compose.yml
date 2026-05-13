@@ -46,6 +46,10 @@ services:
       - SEARCH_WORKER_ELASTICSEARCH_URLS=http://elasticsearch:9200
       # Optional shared secret; must match Search:WorkerAuthToken on many_faces_backend when set (never commit real values).
       - SEARCH_WORKER_EXPECTED_TOKEN=${SEARCH_WORKER_EXPECTED_TOKEN:-}
+      # Optional TLS + mTLS (mount PEM files read-only). See monorepo docs/guides/elasticsearch-grpc-tls-mtls.md
+      # - SEARCH_WORKER_GRPC_TLS_CERT_FILE=/run/grpc-tls/server.crt
+      # - SEARCH_WORKER_GRPC_TLS_KEY_FILE=/run/grpc-tls/server.key
+      # - SEARCH_WORKER_GRPC_MTLS_CLIENT_CA_FILE=/run/grpc-tls/client-ca.crt
     ports:
       - "${SEARCH_WORKER_GRPC_HOST_PORT:-59202}:50052"
     depends_on:

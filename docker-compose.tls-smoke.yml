@@ -1,0 +1,62 @@
+# Isolated Elasticsearch + search-worker for TLS/mTLS smoke tests (CI and local).
+# Uses host ports 59210 (Elasticsearch HTTP) and 59211 (gRPC) to avoid clashing with default dev mapping.
+# Run: SEARCH_TLS_SMOKE_CERT_DIR="$(pwd)/certs" docker compose -f docker-compose.tls-smoke.yml --project-name mf-search-tls-smoke up -d --build
+# PEM bundle is mounted read-only at /tls (ca.crt, server.crt, server.key, client certs for grpcurl / .NET).
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: elasticsearch-tls-smoke
+    environment:
+      - node.name=es-tls-smoke-1
+      - cluster.name=many-faces-tls-smoke
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.ml.enabled=false
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ports:
+      - "59210:9200"
+    volumes:
+      - es_tls_smoke_data:/usr/share/elasticsearch/data
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    networks:
+      - tls-smoke-net
+    healthcheck:
+      test:
+        ["CMD-SHELL", "curl -sf http://127.0.0.1:9200 >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  search-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.search-worker
+    image: many-faces-search-worker:tls-smoke
+    container_name: search-worker-tls-smoke
+    environment:
+      - SEARCH_WORKER_GRPC_LISTEN=:50052
+      - SEARCH_WORKER_ELASTICSEARCH_URLS=http://elasticsearch:9200
+      - SEARCH_WORKER_GRPC_TLS_CERT_FILE=/tls/server.crt
+      - SEARCH_WORKER_GRPC_TLS_KEY_FILE=/tls/server.key
+      - SEARCH_WORKER_GRPC_MTLS_CLIENT_CA_FILE=/tls/ca.crt
+    ports:
+      - "59211:50052"
+    volumes:
+      - ${SEARCH_TLS_SMOKE_CERT_DIR:?SEARCH_TLS_SMOKE_CERT_DIR must point to a directory containing ca.crt, server.crt, server.key, client.crt, client.key}:/tls:ro
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - tls-smoke-net
+
+volumes:
+  es_tls_smoke_data:
+
+networks:
+  tls-smoke-net:
+    driver: bridge

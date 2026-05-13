@@ -20,6 +20,7 @@ import (
 
 	searchv1 "github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1"
 	"github.com/01laky/many_faces_elastic/internal/config"
+	"github.com/01laky/many_faces_elastic/internal/grpccreds"
 	"github.com/01laky/many_faces_elastic/internal/server"
 )
 
@@ -50,10 +51,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	serverCreds, err := grpccreds.LoadServerCredentials(cfg.GrpcTLSCertFile, cfg.GrpcTLSKeyFile, cfg.GrpcMTLSClientCAFile)
+	if err != nil {
+		log.Error("failed to configure gRPC TLS", "error", err)
+		os.Exit(1)
+	}
+
+	var serverOpts []grpc.ServerOption
+	if serverCreds != nil {
+		serverOpts = append(serverOpts, grpc.Creds(serverCreds))
+	}
 	// ChainUnaryInterceptor applies shared-secret metadata checks before application RPCs (health is exempted inside the interceptor).
-	grpcServer := grpc.NewServer(
-		grpc.ChainUnaryInterceptor(server.UnaryAuthInterceptor(cfg.ExpectedWorkerToken)),
-	)
+	serverOpts = append(serverOpts, grpc.ChainUnaryInterceptor(server.UnaryAuthInterceptor(cfg.ExpectedWorkerToken)))
+	grpcServer := grpc.NewServer(serverOpts...)
 
 	searchv1.RegisterSearchServiceServer(grpcServer, server.NewSearchService(es, log))
 
@@ -66,7 +76,14 @@ func main() {
 	reflection.Register(grpcServer)
 
 	go func() {
-		log.Info("search-worker gRPC listening", "addr", cfg.GRPCListen, "elasticsearch_urls", cfg.ElasticsearchAddresses)
+		tlsMode := "plaintext"
+		if serverCreds != nil {
+			tlsMode = "tls"
+			if cfg.GrpcMTLSClientCAFile != "" {
+				tlsMode = "mtls"
+			}
+		}
+		log.Info("search-worker gRPC listening", "addr", cfg.GRPCListen, "tls", tlsMode, "elasticsearch_urls", cfg.ElasticsearchAddresses)
 		if err := grpcServer.Serve(lis); err != nil {
 			log.Error("gRPC server stopped with error", "error", err)
 			os.Exit(1)

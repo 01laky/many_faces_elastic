@@ -46,6 +46,17 @@ cp .env.example .env   # optional overrides
 
 `docker compose up` starts **both** `elasticsearch` and `search-worker`. The worker refuses to start without `SEARCH_WORKER_ELASTICSEARCH_URLS` (set in `docker-compose.yml` by default).
 
+## TLS / mTLS smoke (CI + manual)
+
+From the monorepo root (requires **OpenSSL**, **Docker**, **grpcurl**, **.NET 10 SDK**):
+
+```bash
+chmod +x many_faces_elastic/scripts/smoke-grpc-tls.sh
+many_faces_elastic/scripts/smoke-grpc-tls.sh
+```
+
+This uses **`docker-compose.tls-smoke.yml`** (host ports **59210** / **59211**), then **`dotnet test`** against **`SearchWorkerTlsEndToEndSmokeTests`**. Set **`RUN_DOTNET_TLS_SMOKE=0`** to run **grpcurl** only. See **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**.
+
 ## Regenerating Go stubs from `proto/`
 
 If you change `proto/manyfaces/search/v1/search.proto`, regenerate Go into `gen/` (example using Docker when `protoc` is not installed on the host):
@@ -69,7 +80,8 @@ Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned wi
 ## Authenticating callers (dev → prod path)
 
 - **Dev:** optional shared secret: set `SEARCH_WORKER_EXPECTED_TOKEN` for the worker and the same value in **`Search__WorkerAuthToken`** on the API. The worker enforces metadata header `x-search-worker-token` for application RPCs; **gRPC health** checks are exempt.
-- **Prod (recommended direction):** TLS for gRPC plus **mTLS** or stronger service identity (see monorepo security docs). Network allowlisting alone is insufficient.
+- **TLS / mTLS:** set **`SEARCH_WORKER_GRPC_TLS_CERT_FILE`** and **`SEARCH_WORKER_GRPC_TLS_KEY_FILE`** (PEM) to enable TLS on the gRPC listener; set **`SEARCH_WORKER_GRPC_MTLS_CLIENT_CA_FILE`** to require client certificates. On **`many_faces_backend`**, use **`Search__WorkerGrpcUrl=https://…`** and optional **`Search__WorkerTlsServerCaPath`**, **`Search__WorkerTlsClientCertPath`**, **`Search__WorkerTlsClientKeyPath`**, **`Search__WorkerGrpcTlsServerName`** (see monorepo **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**).
+- **Prod (recommended direction):** TLS for gRPC plus **mTLS** and/or a strong service identity (token alone is insufficient on hostile networks). Network allowlisting alone is insufficient.
 
 ## Monorepo integration
 
