@@ -86,6 +86,7 @@ Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned wi
 ## Monorepo integration
 
 - Submodule path: `many_faces_elastic/` under `many_faces_main`.
+- **Parent-repo documentation (features, TLS, CI):** [`docs/guides/elasticsearch-search-features-overview.md`](../docs/guides/elasticsearch-search-features-overview.md), [`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md), [`docs/guides/elasticsearch-local-dev.md`](../docs/guides/elasticsearch-local-dev.md).
 - Full dev stack: `ENABLE_ELASTICSEARCH=1 ./scripts/start-all-dev.sh` attaches **`elasticsearch-dev`** and **`search-worker-dev`** to **`many_faces_main_dev-network`**.
 - Backend configuration: see **`docs/guides/elasticsearch-local-dev.md`** in the monorepo (`Search__Enabled`, `Search__WorkerGrpcUrl`, optional `Search__WorkerAuthToken`).
 
