@@ -1,0 +1,29 @@
+# Multi-stage build for the Go search-worker gRPC server (colocated with Elasticsearch in many_faces_elastic).
+# The final image is minimal: static binary only, non-root user, no shell — suitable as an internal sidecar.
+
+# --- build stage ---
+FROM golang:1.23-bookworm AS build
+
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+
+# Static binary: no libc dynamic linking issues in a distroless runtime.
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/search-worker ./cmd/search-worker
+
+# --- runtime stage ---
+FROM gcr.io/distroless/static-debian12:nonroot
+
+WORKDIR /
+
+COPY --from=build /out/search-worker /search-worker
+
+# gRPC listen port inside the container (mapped in docker-compose.yml).
+EXPOSE 50052
+
+USER nonroot:nonroot
+
+ENTRYPOINT ["/search-worker"]

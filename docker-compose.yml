@@ -31,6 +31,30 @@ services:
       retries: 10
       start_period: 60s
 
+  # Go gRPC sidecar: the only component that should call Elasticsearch HTTP for application paths.
+  # many_faces_backend reaches this service as http://search-worker-dev:50052 on many_faces_main_dev-network (container_name below).
+  search-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.search-worker
+    image: many-faces-search-worker:dev
+    container_name: search-worker-dev
+    environment:
+      # Bind all interfaces inside the container; compose maps host port separately.
+      - SEARCH_WORKER_GRPC_LISTEN=:50052
+      # Docker DNS service name of the Elasticsearch service in this compose file (not the container_name).
+      - SEARCH_WORKER_ELASTICSEARCH_URLS=http://elasticsearch:9200
+      # Optional shared secret; must match Search:WorkerAuthToken on many_faces_backend when set (never commit real values).
+      - SEARCH_WORKER_EXPECTED_TOKEN=${SEARCH_WORKER_EXPECTED_TOKEN:-}
+    ports:
+      - "${SEARCH_WORKER_GRPC_HOST_PORT:-59202}:50052"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - elastic-network
+    restart: unless-stopped
+
 volumes:
   elasticsearch-data:
 

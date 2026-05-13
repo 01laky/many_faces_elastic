@@ -1,0 +1,25 @@
+# Go CI for the many_faces_elastic repository (standalone search-worker + compose).
+# When this folder is used as a git submodule inside many_faces_main, the monorepo root workflow also runs `go test`.
+
+name: go
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: go.sum
+
+      - name: go vet and test
+        run: |
+          go vet ./...
+          go test ./... -count=1

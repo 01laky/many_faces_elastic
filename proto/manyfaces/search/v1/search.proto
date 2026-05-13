@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+// Search worker API: internal gRPC surface exposed by the Go search-worker colocated with Elasticsearch
+// in many_faces_elastic. many_faces_backend and many_faces_ai consume the same contract (C# / Python stubs).
+package manyfaces.search.v1;
+
+option go_package = "github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1;searchv1";
+option csharp_namespace = "ManyFaces.Search.V1";
+
+// PingRequest carries optional metadata for logs and future distributed tracing.
+message PingRequest {
+  // Optional correlation id (e.g. ASP.NET trace identifier) echoed in worker logs; never treated as secret.
+  string correlation_id = 1;
+}
+
+// PingResponse reports whether the worker could reach Elasticsearch and read cluster metadata.
+message PingResponse {
+  // True when Elasticsearch HTTP responded successfully and cluster_name could be read (or empty cluster allowed).
+  bool elasticsearch_reachable = 1;
+  // Elasticsearch "cluster_name" from the root HTTP API when reachable.
+  string cluster_name = 2;
+  // Human-readable error for operators when elasticsearch_reachable is false.
+  string error_message = 3;
+}
+
+// SearchService is implemented only by the Go worker. Callers must authenticate per many_faces_elastic README.
+service SearchService {
+  // Ping verifies gRPC transport plus Elasticsearch connectivity from inside the worker network namespace.
+  rpc Ping(PingRequest) returns (PingResponse);
+}

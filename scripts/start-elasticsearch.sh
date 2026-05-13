@@ -10,7 +10,7 @@ docker compose up -d
 echo "Waiting for Elasticsearch HTTP..."
 for i in $(seq 1 60); do
   if curl -sf "http://127.0.0.1:${ELASTIC_HTTP_HOST_PORT:-59200}/" >/dev/null 2>&1; then
-    echo "Elasticsearch is up on http://localhost:${ELASTIC_HTTP_HOST_PORT:-59200}"
+    echo "Elasticsearch is up on http://localhost:${ELASTIC_HTTP_HOST_PORT:-59200} (search-worker gRPC on localhost:${SEARCH_WORKER_GRPC_HOST_PORT:-59202})"
     exit 0
   fi
   sleep 2
