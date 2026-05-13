@@ -5,6 +5,8 @@ Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTP
 
 Optional **Elasticsearch** stack plus a colocated **Go gRPC search-worker** for the Many Faces monorepo. Together they provide a **read-optimized search projection** (full-text, facets, autocomplete later). **PostgreSQL remains the system of record**; this repository ships Docker tooling, the worker source, and the **canonical `.proto`** contract consumed by **`many_faces_backend`** (C# gRPC client) and eventually **`many_faces_ai`** (Python client).
 
+**Operator notes (TLS, smoke, CI pointers):** [`docs/search-stack.md`](./docs/search-stack.md).
+
 ## Image and licensing
 
 This submodule uses the **official Elastic** image `docker.elastic.co/elasticsearch/elasticsearch`. Elastic Stack components are subject to the **Elastic License v2** (not Apache 2.0). For strict OSS-only deployments, evaluate **OpenSearch** instead and align client libraries and documentation across the monorepo.
