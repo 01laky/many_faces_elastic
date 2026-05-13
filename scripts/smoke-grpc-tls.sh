@@ -67,6 +67,11 @@ openssl req -new -key "$CERT_DIR/client.key" -out "$CERT_DIR/client.csr" \
 openssl x509 -req -in "$CERT_DIR/client.csr" -CA "$CERT_DIR/ca.crt" -CAkey "$CERT_DIR/ca.key" -CAcreateserial \
   -out "$CERT_DIR/client.crt" -days 1 -sha256
 
+# The search-worker image runs as nonroot (distroless). Bind-mounted PEMs must be readable by any UID
+# inside the container (ephemeral smoke material only — do not use this pattern for real secrets).
+chmod 755 "$CERT_DIR"
+chmod a+r "$CERT_DIR"/*.crt "$CERT_DIR"/*.key 2>/dev/null || true
+
 echo "== Starting Elasticsearch + search-worker (TLS + mTLS)"
 (cd "$ELASTIC_DIR" && docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up -d --build)
 

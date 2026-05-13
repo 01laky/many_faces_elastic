@@ -57,7 +57,7 @@ chmod +x many_faces_elastic/scripts/smoke-grpc-tls.sh
 many_faces_elastic/scripts/smoke-grpc-tls.sh
 ```
 
-This uses **`docker-compose.tls-smoke.yml`** (host ports **59210** / **59211**), then **`dotnet test`** against **`SearchWorkerTlsEndToEndSmokeTests`**. Set **`RUN_DOTNET_TLS_SMOKE=0`** to run **grpcurl** only. See **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**.
+This uses **`docker-compose.tls-smoke.yml`** (host ports **59210** / **59211**), then **`dotnet test`** against **`SearchWorkerTlsEndToEndSmokeTests`**. Set **`RUN_DOTNET_TLS_SMOKE=0`** to run **grpcurl** only. The smoke script sets **world-readable permissions on the ephemeral PEM directory** so the **distroless nonroot** worker process can read the bind-mounted certs. See **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**.
 
 ## Regenerating Go stubs from `proto/`
 
