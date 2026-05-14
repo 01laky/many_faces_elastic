@@ -3,7 +3,7 @@
 **Canonical GitHub repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic) — default branch **`main`**.  
 Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTPS: `https://github.com/01laky/many_faces_elastic.git`). In the **many_faces_main** monorepo this tree is typically checked out as the `many_faces_elastic/` git submodule ([monorepo submodule guide](https://github.com/01laky/many_faces_main/blob/main/docs/guides/git-submodules.md)).
 
-Optional **Elasticsearch** stack plus a colocated **Go gRPC search-worker** for the Many Faces monorepo. Together they provide a **read-optimized search projection** (full-text, facets, autocomplete later). **PostgreSQL remains the system of record**; this repository ships Docker tooling, the worker source, and the **canonical `.proto`** contract consumed by **`many_faces_backend`** (C# gRPC client) and eventually **`many_faces_ai`** (Python client).
+Optional **Elasticsearch** stack plus a colocated **Go gRPC search-worker** for the Many Faces monorepo. Together they provide a **read-optimized search projection** (full-text, facets, autocomplete later). **PostgreSQL remains the system of record**; this repository ships Docker tooling and the worker source. The **canonical `.proto`** contract lives in **`many_faces_proto`** and is consumed by **`many_faces_backend`** (C# gRPC client) and eventually **`many_faces_ai`** (Python client).
 
 **Operator notes (TLS, smoke, CI pointers):** [`docs/search-stack.md`](./docs/search-stack.md).
 
@@ -59,25 +59,30 @@ many_faces_elastic/scripts/smoke-grpc-tls.sh
 
 This uses **`docker-compose.tls-smoke.yml`** (host ports **59210** / **59211**), then **`dotnet test`** against **`SearchWorkerTlsEndToEndSmokeTests`**. Set **`RUN_DOTNET_TLS_SMOKE=0`** to run **grpcurl** only. The smoke script sets **world-readable permissions on the ephemeral PEM directory** so the **distroless nonroot** worker process can read the bind-mounted certs. See **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**.
 
-## Regenerating Go stubs from `proto/`
+## Regenerating Go stubs (from `many_faces_proto`)
 
-If you change `proto/manyfaces/search/v1/search.proto`, regenerate Go into `gen/` (example using Docker when `protoc` is not installed on the host):
+If you change **`many_faces_proto/proto/manyfaces/search/v1/search.proto`**, regenerate Go into **`gen/`** from this repo root inside **`many_faces_main`**:
 
 ```bash
-docker run --rm -v "$(pwd)":/w -w /w golang:1.23-bookworm bash -c '
+docker run --rm \
+  -v "$(pwd)":/w \
+  -v "$(pwd)/../many_faces_proto":/mfproto:ro \
+  -w /w golang:1.23-bookworm bash -c '
   apt-get update -qq && apt-get install -y -qq protobuf-compiler >/dev/null
   go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
   export PATH="$PATH:$(go env GOPATH)/bin"
   mkdir -p gen
-  protoc -I proto \
+  protoc -I /mfproto/proto \
     --go_out=gen --go_opt=paths=source_relative \
     --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
-    proto/manyfaces/search/v1/search.proto
+    manyfaces/search/v1/search.proto
 '
 ```
 
 Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned with the `go_package` option in the `.proto` file (`github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1`).
+
+**Standalone clone:** mount or clone **`many_faces_proto`** beside this repository so `/mfproto/proto` resolves (same pattern as **`many_faces_push`**).
 
 ## Authenticating callers (dev → prod path)
 

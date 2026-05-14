@@ -22,7 +22,7 @@ Local dev (ports, `ENABLE_ELASTICSEARCH`, Docker DNS, grpcurl):
 | `docker-compose.tls-smoke.yml` | Isolated stack for TLS/mTLS verification (host ports **59210** / **59211**). |
 | `scripts/smoke-grpc-tls.sh` | Generates demo PEMs, runs TLS compose, **grpcurl** `Ping`, optional **dotnet** e2e test. Sets **755** on the temp cert dir and **world-readable** `.crt`/`.key` so the **nonroot** distroless worker can read bind mounts (CI only). |
 | `internal/grpccreds` | Server TLS credentials loader used by `cmd/search-worker`. |
-| `proto/manyfaces/search/v1/search.proto` | gRPC contract; Go stubs under `gen/`. |
+| `proto/README.md` | Pointer to **`many_faces_proto`** search contract. |
 
 ## Worker environment (TLS)
 
