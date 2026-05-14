@@ -61,12 +61,12 @@ This uses **`docker-compose.tls-smoke.yml`** (host ports **59210** / **59211**),
 
 ## Regenerating Go stubs (from `many_faces_proto`)
 
-If you change **`many_faces_proto/proto/manyfaces/search/v1/search.proto`**, regenerate Go into **`gen/`** from this repo root inside **`many_faces_main`**:
+If you change **`many_faces_proto/proto/manyfaces/search/v1/search.proto`**, regenerate Go into **`gen/`** from this repository root:
 
 ```bash
 docker run --rm \
   -v "$(pwd)":/w \
-  -v "$(pwd)/../many_faces_proto":/mfproto:ro \
+  -v "$(pwd)/many_faces_proto":/mfproto:ro \
   -w /w golang:1.23-bookworm bash -c '
   apt-get update -qq && apt-get install -y -qq protobuf-compiler >/dev/null
   go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.5
@@ -82,7 +82,7 @@ docker run --rm \
 
 Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned with the `go_package` option in the `.proto` file (`github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1`).
 
-**Standalone clone:** mount or clone **`many_faces_proto`** beside this repository so `/mfproto/proto` resolves (same pattern as **`many_faces_push`**).
+**Standalone clone:** run **`git submodule update --init --recursive`** so **`many_faces_proto/`** exists under this repo (nested submodule, Strategy B).
 
 ## Authenticating callers (dev → prod path)
 

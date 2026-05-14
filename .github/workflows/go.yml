@@ -13,9 +13,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Clone many_faces_proto (contract source)
-        run: git clone --depth 1 https://github.com/01laky/many_faces_proto.git "${{ github.workspace }}/../many_faces_proto"
+        with:
+          submodules: recursive
 
       - uses: actions/setup-go@v5
         with:

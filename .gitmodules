@@ -1,0 +1,3 @@
+[submodule "many_faces_proto"]
+	path = many_faces_proto
+	url = https://github.com/01laky/many_faces_proto.git
