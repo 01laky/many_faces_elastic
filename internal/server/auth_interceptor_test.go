@@ -95,3 +95,68 @@ func TestUnaryAuthInterceptor_AllowsPingWithTokenWhenExpected(t *testing.T) {
 		t.Fatalf("expected reachable=true from stub")
 	}
 }
+
+func TestUnaryAuthInterceptor_AllowsPingWhenSecretEmpty(t *testing.T) {
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(UnaryAuthInterceptor("")))
+	searchv1.RegisterSearchServiceServer(srv, noopSearchService{})
+
+	lis := bufconn.Listen(1024 * 1024)
+	go func() {
+		if err := srv.Serve(lis); err != nil {
+			t.Logf("server exit: %v", err)
+		}
+	}()
+	t.Cleanup(func() { srv.Stop() })
+
+	ctx := context.Background()
+	conn, err := grpc.NewClient(
+		"passthrough:///bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+
+	client := searchv1.NewSearchServiceClient(conn)
+	if _, err := client.Ping(ctx, &searchv1.PingRequest{}); err != nil {
+		t.Fatalf("ping without token when secret empty: %v", err)
+	}
+}
+
+func TestUnaryAuthInterceptor_RejectsPingWithWrongTokenWhenExpected(t *testing.T) {
+	const secret = "expected"
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(UnaryAuthInterceptor(secret)))
+	searchv1.RegisterSearchServiceServer(srv, noopSearchService{})
+
+	lis := bufconn.Listen(1024 * 1024)
+	go func() {
+		if err := srv.Serve(lis); err != nil {
+			t.Logf("server exit: %v", err)
+		}
+	}()
+	t.Cleanup(func() { srv.Stop() })
+
+	md := metadata.Pairs(metadataWorkerTokenKey, "wrong")
+	ctx := metadata.NewOutgoingContext(context.Background(), md)
+	conn, err := grpc.NewClient(
+		"passthrough:///bufnet",
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) { return lis.Dial() }),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	t.Cleanup(func() { _ = conn.Close() })
+
+	client := searchv1.NewSearchServiceClient(conn)
+	_, err = client.Ping(ctx, &searchv1.PingRequest{})
+	if err == nil {
+		t.Fatal("expected Unauthenticated")
+	}
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.Unauthenticated {
+		t.Fatalf("unexpected: %v", err)
+	}
+}
