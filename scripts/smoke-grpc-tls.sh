@@ -70,7 +70,8 @@ openssl x509 -req -in "$CERT_DIR/client.csr" -CA "$CERT_DIR/ca.crt" -CAkey "$CER
 # The search-worker image runs as nonroot (distroless). Bind-mounted PEMs must be readable by any UID
 # inside the container (ephemeral smoke material only — do not use this pattern for real secrets).
 chmod 755 "$CERT_DIR"
-chmod a+r "$CERT_DIR"/*.crt "$CERT_DIR"/*.key 2>/dev/null || true
+chmod a+r "$CERT_DIR"/*.crt "$CERT_DIR/server.key" 2>/dev/null || true
+chmod 600 "$CERT_DIR/client.key"
 
 echo "== Starting Elasticsearch + search-worker (TLS + mTLS)"
 (cd "$ELASTIC_DIR" && docker compose -f "$COMPOSE_FILE" -p "$PROJECT_NAME" up -d --build)
@@ -92,7 +93,7 @@ fi
 echo "== Waiting for gRPC Ping (grpcurl, TLS + mTLS)"
 GRPC_OK=0
 for _ in $(seq 1 60); do
-  if OUT="$(grpcurl -cacert "$CERT_DIR/ca.crt" -cert "$CERT_DIR/client.crt" -key "$CERT_DIR/client.key" \
+  if OUT="$(grpcurl -servername localhost -cacert "$CERT_DIR/ca.crt" -cert "$CERT_DIR/client.crt" -key "$CERT_DIR/client.key" \
     -d '{"correlation_id":"smoke-grpcurl"}' \
     127.0.0.1:59211 manyfaces.search.v1.SearchService/Ping 2>&1)"; then
     if echo "$OUT" | grep -q '"elasticsearchReachable": true'; then
