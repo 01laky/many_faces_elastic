@@ -125,6 +125,49 @@ func TestUnaryAuthInterceptor_AllowsPingWhenSecretEmpty(t *testing.T) {
 	}
 }
 
+func TestUnaryAuthInterceptor_AllowsHealthRPCWithoutToken(t *testing.T) {
+	ic := UnaryAuthInterceptor("unit-test-secret")
+	info := &grpc.UnaryServerInfo{FullMethod: "/grpc.health.v1.Health/Check"}
+	called := false
+	_, err := ic(context.Background(), nil, info, func(context.Context, any) (any, error) {
+		called = true
+		return "ok", nil
+	})
+	if err != nil {
+		t.Fatalf("health check: %v", err)
+	}
+	if !called {
+		t.Fatal("handler was not invoked")
+	}
+}
+
+func TestUnaryAuthInterceptor_RejectsWhenMetadataMissing(t *testing.T) {
+	ic := UnaryAuthInterceptor("secret")
+	info := &grpc.UnaryServerInfo{FullMethod: "/manyfaces.search.v1.SearchService/Ping"}
+	_, err := ic(context.Background(), nil, info, func(context.Context, any) (any, error) {
+		t.Fatal("handler should not run")
+		return nil, nil
+	})
+	st, ok := status.FromError(err)
+	if !ok || st.Code() != codes.Unauthenticated {
+		t.Fatalf("unexpected: %v", err)
+	}
+}
+
+func TestUnaryAuthInterceptor_RejectsDuplicateTokenHeaders(t *testing.T) {
+	ic := UnaryAuthInterceptor("secret")
+	info := &grpc.UnaryServerInfo{FullMethod: "/manyfaces.search.v1.SearchService/Ping"}
+	md := metadata.Pairs(metadataWorkerTokenKey, "secret", metadataWorkerTokenKey, "secret")
+	ctx := metadata.NewIncomingContext(context.Background(), md)
+	_, err := ic(ctx, nil, info, func(context.Context, any) (any, error) {
+		t.Fatal("handler should not run")
+		return nil, nil
+	})
+	if err == nil {
+		t.Fatal("expected error for duplicate metadata values")
+	}
+}
+
 func TestUnaryAuthInterceptor_RejectsPingWithWrongTokenWhenExpected(t *testing.T) {
 	const secret = "expected"
 	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(UnaryAuthInterceptor(secret)))

@@ -55,3 +55,22 @@ func TestLoadFromEnv_TrimsAndSplitsCommaURLs(t *testing.T) {
 		t.Fatalf("want 2 addresses, got %#v", c.ElasticsearchAddresses)
 	}
 }
+
+func TestLoadFromEnv_TrimsTLSPaths(t *testing.T) {
+	t.Setenv(EnvGRPCListen, ":50052")
+	t.Setenv(EnvElasticsearchURLs, "http://elasticsearch:9200")
+	t.Setenv(EnvGrpcTLSCertFile, "  /certs/server.crt  ")
+	t.Setenv(EnvGrpcTLSKeyFile, " /certs/server.key ")
+	t.Setenv(EnvGrpcMTLSClientCAFile, " /certs/ca.pem ")
+
+	c, err := LoadFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.GrpcTLSCertFile != "/certs/server.crt" || c.GrpcTLSKeyFile != "/certs/server.key" {
+		t.Fatalf("tls paths: cert=%q key=%q", c.GrpcTLSCertFile, c.GrpcTLSKeyFile)
+	}
+	if c.GrpcMTLSClientCAFile != "/certs/ca.pem" {
+		t.Fatalf("mtls ca: %q", c.GrpcMTLSClientCAFile)
+	}
+}
