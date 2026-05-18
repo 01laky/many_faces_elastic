@@ -13,22 +13,22 @@ This submodule uses the **official Elastic** image `docker.elastic.co/elasticsea
 
 ## Architecture (v1)
 
-| Component | Role |
-| --------- | ---- |
-| **Elasticsearch** | Stores the search index; exposes HTTP on port `9200` inside the compose network. |
-| **search-worker** (`cmd/search-worker`) | The **only** shipping path that may call Elasticsearch HTTP for application logic. Exposes **gRPC** on `50052` inside the container. |
-| **many_faces_backend** | REST/OpenAPI for products; calls the worker via **gRPC** (`Grpc.Net.Client`). Does **not** use Elasticsearch HTTP for the main search path. |
+| Component                               | Role                                                                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Elasticsearch**                       | Stores the search index; exposes HTTP on port `9200` inside the compose network.                                                            |
+| **search-worker** (`cmd/search-worker`) | The **only** shipping path that may call Elasticsearch HTTP for application logic. Exposes **gRPC** on `50052` inside the container.        |
+| **many_faces_backend**                  | REST/OpenAPI for products; calls the worker via **gRPC** (`Grpc.Net.Client`). Does **not** use Elasticsearch HTTP for the main search path. |
 
 Browsers, SPAs, and mobile apps **never** call the worker or Elasticsearch directly.
 
 ## Ports (development defaults)
 
-| Direction | Value |
-| --------- | ----- |
-| Host → Elasticsearch HTTP | `localhost:59200` → container `9200` |
-| Host → worker gRPC (debugging / grpcurl) | `localhost:59202` → container `50052` |
-| Backend container → worker | `http://search-worker-dev:50052` on `many_faces_main_dev-network` |
-| Worker → Elasticsearch (inside `many_faces_elastic` compose) | `http://elasticsearch:9200` (Docker **service** DNS name) |
+| Direction                                                    | Value                                                             |
+| ------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Host → Elasticsearch HTTP                                    | `localhost:59200` → container `9200`                              |
+| Host → worker gRPC (debugging / grpcurl)                     | `localhost:59202` → container `50052`                             |
+| Backend container → worker                                   | `http://search-worker-dev:50052` on `many_faces_main_dev-network` |
+| Worker → Elasticsearch (inside `many_faces_elastic` compose) | `http://elasticsearch:9200` (Docker **service** DNS name)         |
 
 ## Requirements
 
