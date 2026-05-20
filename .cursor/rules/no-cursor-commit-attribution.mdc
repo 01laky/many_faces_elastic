@@ -1,0 +1,9 @@
+---
+description: Never add Cursor co-author or marketing trailers to git commits or PR text.
+alwaysApply: true
+---
+
+# Git commits and PRs
+
+- Do **not** add `Co-authored-by: Cursor`, `Co-authored-by: cursoragent`, `Signed-off-by: Cursor`, `Signed-off-by: Cursor Agent`, `Made with Cursor`, or any Cursor / Anysphere attribution trailers to commit messages, PR descriptions, or squashed merge bodies.
+- When preparing a commit message for the user, end the body after the last factual sentence; do not append attribution footers.
