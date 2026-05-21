@@ -1,11 +1,21 @@
 # many_faces_elastic
 
+**Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly.
+
 **Canonical GitHub repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic) — default branch **`main`**.  
 Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTPS: `https://github.com/01laky/many_faces_elastic.git`). In the **many_faces_main** monorepo this tree is typically checked out as the `many_faces_elastic/` git submodule ([monorepo submodule guide](https://github.com/01laky/many_faces_main/blob/main/docs/guides/git-submodules.md)).
 
 Optional **Elasticsearch** stack plus a colocated **Go gRPC search-worker** for the Many Faces monorepo. Together they provide a **read-optimized search projection** (full-text, facets, autocomplete later). **PostgreSQL remains the system of record**; this repository ships Docker tooling and the worker source. The **canonical `.proto`** contract lives in **`many_faces_proto`** and is consumed by **`many_faces_backend`** (C# gRPC client) and eventually **`many_faces_ai`** (Python client).
 
 **Operator notes (TLS, smoke, CI pointers):** [`docs/search-stack.md`](./docs/search-stack.md).
+
+```mermaid
+flowchart LR
+    clients["portal / admin / mobile"] --> be["many_faces_backend<br/>REST search APIs"]
+    be -->|"gRPC :50052"| worker["search-worker<br/>Go"]
+    worker -->|"HTTP :9200"| es["Elasticsearch<br/>read index"]
+    pg["PostgreSQL<br/>source of truth"] -.-> be
+```
 
 ## Image and licensing
 
