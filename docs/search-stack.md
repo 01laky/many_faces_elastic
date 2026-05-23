@@ -1,12 +1,32 @@
-# Search stack — operator index
+# Search stack — operator quick reference (`many_faces_elastic`)
 
-Short pointer for **`many_faces_elastic`**. Deep guides live in the monorepo **`many_faces_main`** repo.
+**Monorepo guides (canonical):**
 
-| Topic                                                          | Document                                                                                                                                                             |
-| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local dev (ports, compose, skip with `ENABLE_ELASTICSEARCH=0`) | [`docs/guides/elasticsearch-local-dev.md`](https://github.com/01laky/many_faces_main/blob/main/docs/guides/elasticsearch-local-dev.md)                               |
-| Features, TLS smoke, CI                                        | [`docs/guides/elasticsearch-search-features-overview.md`](https://github.com/01laky/many_faces_main/blob/main/docs/guides/elasticsearch-search-features-overview.md) |
-| Backend ↔ worker gRPC TLS/mTLS                                 | [`docs/guides/elasticsearch-grpc-tls-mtls.md`](https://github.com/01laky/many_faces_main/blob/main/docs/guides/elasticsearch-grpc-tls-mtls.md)                       |
-| Submodule README                                               | [`../README.md`](../README.md)                                                                                                                                       |
+| Guide | Contents |
+| ----- | -------- |
+| [`elasticsearch-local-dev.md`](../../docs/guides/elasticsearch-local-dev.md) | Compose, ports, proto sync, backend `Search:*` env |
+| [`elasticsearch-search-features-overview.md`](../../docs/guides/elasticsearch-search-features-overview.md) | Capability summary, CI, smoke |
+| [`elasticsearch-grpc-tls-mtls.md`](../../docs/guides/elasticsearch-grpc-tls-mtls.md) | TLS/mTLS for backend ↔ worker |
+| [`admin-settings-infrastructure-smoke-tests.md`](../../docs/guides/admin-settings-infrastructure-smoke-tests.md) | Admin UI search health panel |
 
-**Trust boundary:** clients (`many_faces_portal`, `many_faces_admin`, `many_faces_mobile`) call **`many_faces_backend` REST only** — never Elasticsearch or the worker gRPC port directly.
+## Ports (host)
+
+| Service | Host port | Container |
+| ------- | --------- | --------- |
+| Elasticsearch HTTP | **59200** | `elasticsearch-dev:9200` |
+| Search worker gRPC | **59202** | `search-worker-dev:50052` |
+
+## Diagram: data path
+
+```mermaid
+flowchart LR
+  BE[many_faces_backend]
+  SW[search-worker Go gRPC]
+  ES[(Elasticsearch)]
+  BE -->|Search enabled| SW
+  SW --> ES
+```
+
+## Submodule README
+
+Run scripts, proto regen, Docker details: [`../README.md`](../README.md).
