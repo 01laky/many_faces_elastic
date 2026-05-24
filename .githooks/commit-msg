@@ -1,5 +1,5 @@
 #!/bin/sh
-# Strip Cursor co-author trailers before the commit is recorded.
+# Second pass: strip Cursor trailers after any late injection.
 set -e
 root=$(git rev-parse --show-toplevel)
 msg_file="$1"

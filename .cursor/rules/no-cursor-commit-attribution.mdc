@@ -7,3 +7,6 @@ alwaysApply: true
 
 - Do **not** add `Co-authored-by: Cursor`, `Co-authored-by: cursoragent`, `Signed-off-by: Cursor`, `Signed-off-by: Cursor Agent`, `Made with Cursor`, or any Cursor / Anysphere attribution trailers to commit messages, PR descriptions, or squashed merge bodies.
 - When preparing a commit message for the user, end the body after the last factual sentence; do not append attribution footers.
+- The same rule file lives in **each git submodule** (`many_faces_*/.cursor/rules/no-cursor-commit-attribution.mdc`). Open the submodule repo in Cursor when committing there so rules apply.
+- FE/backend/mobile repos run `scripts/strip-cursor-commit-trailers.sh` from **both** `.husky/prepare-commit-msg` and `.husky/commit-msg` (or `.githooks/*` on worker repos) to remove injected trailers — including `Co-authored-by: Cursor <cursoragent@cursor.com>`.
+- After clone: run `./scripts/ensure-githooks-all-repos.sh` from `many_faces_main` once (sets `core.hooksPath=.githooks` on non-Husky repos).
