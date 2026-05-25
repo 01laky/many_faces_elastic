@@ -1,0 +1,23 @@
+---
+description: Before every feature commit — update VERSION and CHANGELOG.md in this repository
+alwaysApply: true
+---
+
+# Version and changelog (many_faces_elastic)
+
+**Before `git commit`** on any user-visible **feature**, **fix**, or behaviour change in **`many_faces_elastic`**, update **`CHANGELOG.md`** and **`VERSION`**. Include both in the **same commit** as the code change.
+
+## Steps (before commit)
+
+1. Add bullet(s) under `## [Unreleased]` — `### Added`, `### Changed`, or `### Fixed` (English, no dates in headings).
+2. Run **`./scripts/bump-version.sh minor`** (feature) or **`patch`** (fix/docs-only).
+3. Run **`./scripts/verify-version-files.sh`**.
+4. Stage `VERSION`, `CHANGELOG.md`, and feature files together.
+
+## Skip
+
+- Question-only turns; typo-only edits (optional patch; user may waive).
+
+## Monorepo
+
+When the monorepo bumps this submodule pointer, the root [`many_faces_main`](https://github.com/01laky/many_faces_main) stack version is updated separately — see its [`CHANGELOG.md`](https://github.com/01laky/many_faces_main/blob/main/CHANGELOG.md).

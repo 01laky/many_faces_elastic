@@ -1,14 +1,16 @@
 # many_faces_elastic
 
+**Version:** [`0.5.0`](./VERSION) · [Changelog](./CHANGELOG.md)
+
 **Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly. **PostgreSQL is authoritative** — Elasticsearch is a read projection only.
 
 ### Three pillars
 
-| Pillar | Highlights |
-| ------ | ----------- |
-| **Security** | Worker **gRPC token** + optional **TLS**; ES not exposed to clients; backend-only integration path. Operator notes: [`docs/search-stack.md`](./docs/search-stack.md). |
-| **AI** | *Not applicable* — full-text search index only (future: semantic search via `many_faces_ai` per platform roadmap). |
-| **Configuration** | Toggle stack: **`ENABLE_ELASTICSEARCH=0`**; host ports **`59200`** (ES) / **`59202`** (gRPC); backend **`SearchOptions`** + admin infra panel. |
+| Pillar            | Highlights                                                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Security**      | Worker **gRPC token** + optional **TLS**; ES not exposed to clients; backend-only integration path. Operator notes: [`docs/search-stack.md`](./docs/search-stack.md). |
+| **AI**            | _Not applicable_ — full-text search index only (future: semantic search via `many_faces_ai` per platform roadmap).                                                    |
+| **Configuration** | Toggle stack: **`ENABLE_ELASTICSEARCH=0`**; host ports **`59200`** (ES) / **`59202`** (gRPC); backend **`SearchOptions`** + admin infra panel.                        |
 
 **Canonical GitHub repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic) — default branch **`main`**.  
 Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTPS: `https://github.com/01laky/many_faces_elastic.git`). In the **many_faces_main** monorepo this tree is typically checked out as the `many_faces_elastic/` git submodule ([monorepo submodule guide](https://github.com/01laky/many_faces_main/blob/main/docs/guides/git-submodules.md)).
@@ -125,13 +127,13 @@ This runs `docker compose down` for this project (Elasticsearch + worker).
 
 ## Search RPCs (v1)
 
-| RPC | Purpose |
-| --- | ------- |
-| `Ping` | Health — Elasticsearch reachability from worker |
-| `IndexDocument` / `DeleteDocument` | Incremental index maintenance |
-| `BulkIndexDocuments` | Reconciliation batch upsert |
-| `ListDocumentIds` | Orphan cleanup during reconciliation |
-| `Autocomplete` | Operator global search (prefix / multi_match) |
+| RPC                                | Purpose                                         |
+| ---------------------------------- | ----------------------------------------------- |
+| `Ping`                             | Health — Elasticsearch reachability from worker |
+| `IndexDocument` / `DeleteDocument` | Incremental index maintenance                   |
+| `BulkIndexDocuments`               | Reconciliation batch upsert                     |
+| `ListDocumentIds`                  | Orphan cleanup during reconciliation            |
+| `Autocomplete`                     | Operator global search (prefix / multi_match)   |
 
 Index name: **`manyfaces-admin-v1`** (single index, `document_type` field). Backend calls these over gRPC; admin SPA uses REST only.
 
