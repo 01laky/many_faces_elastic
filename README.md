@@ -1,8 +1,6 @@
 # many_faces_elastic
 
-**Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly.
-
-> **First visit?** **PostgreSQL is authoritative** — Elasticsearch is a read projection. Browsers and mobile never hit ES or this worker.
+**Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly. **PostgreSQL is authoritative** — Elasticsearch is a read projection only.
 
 ### Three pillars
 
