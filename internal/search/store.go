@@ -149,41 +149,7 @@ func (s *Store) Autocomplete(ctx context.Context, query string, pageSize, offset
 		return nil, status.Errorf(codes.Unavailable, "elasticsearch index: %v", err)
 	}
 
-	must := []any{
-		map[string]any{
-			"multi_match": map[string]any{
-				"query":  query,
-				"fields": []string{"search_text", "title^2", "subtitle"},
-				"type":   "best_fields",
-			},
-		},
-	}
-	if len(documentTypes) > 0 {
-		must = append(must, map[string]any{
-			"terms": map[string]any{"document_type": documentTypes},
-		})
-	}
-
-	searchBody := map[string]any{
-		"from": offset,
-		"size": pageSize,
-		"query": map[string]any{
-			"bool": map[string]any{"must": must},
-		},
-		"highlight": map[string]any{
-			"fields": map[string]any{
-				"search_text": map[string]any{},
-				"title":       map[string]any{},
-			},
-			"pre_tags":  []string{"<em>"},
-			"post_tags": []string{"</em>"},
-		},
-		"sort": []any{
-			map[string]any{"_score": map[string]string{"order": "desc"}},
-			map[string]any{"document_type": map[string]string{"order": "asc"}},
-			map[string]any{"entity_id": map[string]string{"order": "asc"}},
-		},
-	}
+	searchBody := buildAutocompleteSearchBody(query, pageSize, offset, documentTypes)
 	body, _ := json.Marshal(searchBody)
 	res, err := s.es.Search(
 		s.es.Search.WithContext(ctx),
@@ -309,4 +275,60 @@ func (s *Store) ListEntityIDs(ctx context.Context, documentType string, cursor s
 
 func UnixMsNow() int64 {
 	return time.Now().UTC().UnixMilli()
+}
+
+// buildAutocompleteSearchBody combines full-token and prefix clauses so short queries
+// (e.g. "patr" → Patrik, "user3" → user30@demo.com) match while typing.
+func buildAutocompleteSearchBody(query string, pageSize, offset int, documentTypes []string) map[string]any {
+	should := []any{
+		map[string]any{
+			"multi_match": map[string]any{
+				"query":  query,
+				"fields": []string{"search_text", "title^2", "subtitle"},
+				"type":   "best_fields",
+			},
+		},
+	}
+	for _, field := range []string{"search_text", "title", "subtitle"} {
+		should = append(should, map[string]any{
+			"match_phrase_prefix": map[string]any{
+				field: map[string]any{"query": query},
+			},
+		})
+	}
+
+	must := []any{
+		map[string]any{
+			"bool": map[string]any{
+				"should":               should,
+				"minimum_should_match": 1,
+			},
+		},
+	}
+	if len(documentTypes) > 0 {
+		must = append(must, map[string]any{
+			"terms": map[string]any{"document_type": documentTypes},
+		})
+	}
+
+	return map[string]any{
+		"from": offset,
+		"size": pageSize,
+		"query": map[string]any{
+			"bool": map[string]any{"must": must},
+		},
+		"highlight": map[string]any{
+			"fields": map[string]any{
+				"search_text": map[string]any{},
+				"title":       map[string]any{},
+			},
+			"pre_tags":  []string{"<em>"},
+			"post_tags": []string{"</em>"},
+		},
+		"sort": []any{
+			map[string]any{"_score": map[string]string{"order": "desc"}},
+			map[string]any{"document_type": map[string]string{"order": "asc"}},
+			map[string]any{"entity_id": map[string]string{"order": "asc"}},
+		},
+	}
 }
