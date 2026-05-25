@@ -74,11 +74,11 @@ func LoadFromEnv() (*Config, error) {
 	}
 
 	return &Config{
-		GRPCListen:               listen,
-		ElasticsearchAddresses:   addrs,
-		ExpectedWorkerToken:        strings.TrimSpace(os.Getenv(EnvExpectedToken)),
-		GrpcTLSCertFile:            strings.TrimSpace(os.Getenv(EnvGrpcTLSCertFile)),
-		GrpcTLSKeyFile:             strings.TrimSpace(os.Getenv(EnvGrpcTLSKeyFile)),
-		GrpcMTLSClientCAFile:       strings.TrimSpace(os.Getenv(EnvGrpcMTLSClientCAFile)),
+		GRPCListen:             listen,
+		ElasticsearchAddresses: addrs,
+		ExpectedWorkerToken:    strings.TrimSpace(os.Getenv(EnvExpectedToken)),
+		GrpcTLSCertFile:        strings.TrimSpace(os.Getenv(EnvGrpcTLSCertFile)),
+		GrpcTLSKeyFile:         strings.TrimSpace(os.Getenv(EnvGrpcTLSKeyFile)),
+		GrpcMTLSClientCAFile:   strings.TrimSpace(os.Getenv(EnvGrpcMTLSClientCAFile)),
 	}, nil
 }

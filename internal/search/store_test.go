@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/01laky/many_faces_elastic/internal/search"
+	"github.com/elastic/go-elasticsearch/v8"
 )
 
 func newTestStore(t *testing.T, handler http.HandlerFunc) *search.Store {

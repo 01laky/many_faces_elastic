@@ -1,0 +1,26 @@
+{
+	"search.exclude": {
+		"**/gen": false
+	},
+	"files.watcherExclude": {
+		"**/gen/**": true
+	},
+	"editor.formatOnSave": true,
+	"editor.tabSize": 4,
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false,
+	"go.formatTool": "gofmt",
+	"[go]": {
+		"editor.tabSize": 4,
+		"editor.insertSpaces": false,
+		"editor.defaultFormatter": "golang.go"
+	},
+	"[yaml]": {
+		"editor.tabSize": 2,
+		"editor.insertSpaces": false
+	},
+	"[shellscript]": {
+		"editor.tabSize": 2,
+		"editor.insertSpaces": false
+	}
+}

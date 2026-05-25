@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/elastic/go-elasticsearch/v8"
 	searchv1 "github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1"
+	"github.com/elastic/go-elasticsearch/v8"
 )
 
 func writeElasticsearchInfo(w http.ResponseWriter, status int, body string) {

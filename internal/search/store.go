@@ -26,16 +26,16 @@ func NewStore(es *elasticsearch.Client) *Store {
 }
 
 type Document struct {
-	DocumentType   string `json:"document_type"`
-	EntityID       string `json:"entity_id"`
-	FaceID         string `json:"face_id,omitempty"`
-	RoutingUserID  string `json:"routing_user_id,omitempty"`
-	Title          string `json:"title"`
-	Subtitle       string `json:"subtitle,omitempty"`
-	SearchText     string `json:"search_text"`
+	DocumentType    string `json:"document_type"`
+	EntityID        string `json:"entity_id"`
+	FaceID          string `json:"face_id,omitempty"`
+	RoutingUserID   string `json:"routing_user_id,omitempty"`
+	Title           string `json:"title"`
+	Subtitle        string `json:"subtitle,omitempty"`
+	SearchText      string `json:"search_text"`
 	SearchTextEmail string `json:"search_text_email,omitempty"`
-	ApprovalStatus string `json:"approval_status,omitempty"`
-	UpdatedAtUnix  int64  `json:"updated_at_unix_ms"`
+	ApprovalStatus  string `json:"approval_status,omitempty"`
+	UpdatedAtUnix   int64  `json:"updated_at_unix_ms"`
 }
 
 func docID(documentType, entityID string) string {
