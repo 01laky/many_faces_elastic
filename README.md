@@ -103,7 +103,7 @@ Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned wi
 ## Monorepo integration
 
 - Submodule path: `many_faces_elastic/` under `many_faces_main`.
-- **Parent-repo documentation (features, TLS, CI):** [`docs/guides/elasticsearch-search-features-overview.md`](../docs/guides/elasticsearch-search-features-overview.md), [`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md), [`docs/guides/elasticsearch-local-dev.md`](../docs/guides/elasticsearch-local-dev.md).
+- **Parent-repo documentation (features, TLS, CI):** [`docs/guides/elasticsearch-search-features-overview.md`](../docs/guides/elasticsearch-search-features-overview.md), [`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md), [`docs/guides/elasticsearch-local-dev.md`](../docs/guides/elasticsearch-local-dev.md), [`docs/guides/admin-global-search-autocomplete.md`](../docs/guides/admin-global-search-autocomplete.md).
 - Full dev stack: `ENABLE_ELASTICSEARCH=1 ./scripts/start-all-dev.sh` attaches **`elasticsearch-dev`** and **`search-worker-dev`** to **`many_faces_main_dev-network`**.
 - Backend configuration: see **`docs/guides/elasticsearch-local-dev.md`** in the monorepo (`Search__Enabled`, `Search__WorkerGrpcUrl`, optional `Search__WorkerAuthToken`).
 
@@ -115,7 +115,21 @@ Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned wi
 
 This runs `docker compose down` for this project (Elasticsearch + worker).
 
+## Search RPCs (v1)
+
+| RPC | Purpose |
+| --- | ------- |
+| `Ping` | Health — Elasticsearch reachability from worker |
+| `IndexDocument` / `DeleteDocument` | Incremental index maintenance |
+| `BulkIndexDocuments` | Reconciliation batch upsert |
+| `ListDocumentIds` | Orphan cleanup during reconciliation |
+| `Autocomplete` | Operator global search (prefix / multi_match) |
+
+Index name: **`manyfaces-admin-v1`** (single index, `document_type` field). Backend calls these over gRPC; admin SPA uses REST only.
+
+**Tests:** `go test ./...` from this repo (table tests under `internal/search/`). Monorepo gate: `node scripts/verify-admin-global-search-tests.mjs`.
+
 ## Out of scope (later phases)
 
 - Production clustering, TLS everywhere, Elastic Cloud auth wiring beyond placeholders.
-- Outbox/indexer workers, portal/admin search UI (tracked in `docs/prompts/elasticsearch-search-infra-agent-prompt.md`).
+- Portal/member-facing search UI (admin header autocomplete is shipped — see [`docs/guides/admin-global-search-autocomplete.md`](../docs/guides/admin-global-search-autocomplete.md)).
