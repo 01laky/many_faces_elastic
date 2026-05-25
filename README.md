@@ -1,5 +1,15 @@
 # many_faces_elastic
 
+<!-- readme-badges:start -->
+[![version](https://img.shields.io/badge/version-0.5.2-blue)](./VERSION)
+![Go](https://img.shields.io/badge/Go-1.25-00ADD8)
+![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.15-005571)
+![gRPC](https://img.shields.io/badge/gRPC-TLS-244c5a)
+[![CI](https://github.com/01laky/many_faces_main/actions/workflows/ci.yml/badge.svg)](https://github.com/01laky/many_faces_main/actions/workflows/ci.yml)
+![tests](https://img.shields.io/badge/tests-CI%20gated-brightgreen)
+![platform](https://img.shields.io/badge/platform-Docker-2496ED)
+<!-- readme-badges:end -->
+
 **Version:** [`0.5.0`](./VERSION) · [Changelog](./CHANGELOG.md)
 
 **Author:** Ladislav Kostolny · [01laky@gmail.com](mailto:01laky@gmail.com)

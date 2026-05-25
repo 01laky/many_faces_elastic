@@ -24,6 +24,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 ---
 
+## [0.5.2]
+
+### Added
+
+- Add README shield badges (version, CI, stack tech) via sync-readme-badges.py.
+
+### Added
+
+- Add README shield badges (version, CI, stack tech) via sync-readme-badges.py.
+
+### Changed
+
+### Fixed
+
+---
+
 ## [0.5.1]
 
 ### Changed
@@ -78,7 +94,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 - Single-node Elasticsearch Docker compose for local dev.
 
-[Unreleased]: https://github.com/01laky/many_faces_elastic/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/01laky/many_faces_elastic/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/01laky/many_faces_elastic/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/01laky/many_faces_elastic/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/01laky/many_faces_elastic/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/01laky/many_faces_elastic/compare/v0.3.0...v0.4.0
