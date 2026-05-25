@@ -2,6 +2,16 @@
 
 **Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly.
 
+> **First visit?** **PostgreSQL is authoritative** — Elasticsearch is a read projection. Browsers and mobile never hit ES or this worker.
+
+### Three pillars
+
+| Pillar | Highlights |
+| ------ | ----------- |
+| **Security** | Worker **gRPC token** + optional **TLS**; ES not exposed to clients; backend-only integration path. Operator notes: [`docs/search-stack.md`](./docs/search-stack.md). |
+| **AI** | *Not applicable* — full-text search index only (future: semantic search via `many_faces_ai` per platform roadmap). |
+| **Configuration** | Toggle stack: **`ENABLE_ELASTICSEARCH=0`**; host ports **`59200`** (ES) / **`59202`** (gRPC); backend **`SearchOptions`** + admin infra panel. |
+
 **Canonical GitHub repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic) — default branch **`main`**.  
 Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTPS: `https://github.com/01laky/many_faces_elastic.git`). In the **many_faces_main** monorepo this tree is typically checked out as the `many_faces_elastic/` git submodule ([monorepo submodule guide](https://github.com/01laky/many_faces_main/blob/main/docs/guides/git-submodules.md)).
 
