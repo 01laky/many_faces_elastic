@@ -102,18 +102,23 @@ func (s *SearchService) BulkIndexDocuments(ctx context.Context, req *searchv1.Bu
 	if req == nil || len(req.Documents) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "documents are required")
 	}
-	resp := &searchv1.BulkIndexDocumentsResponse{}
+	docs := make([]search.Document, 0, len(req.Documents))
 	for _, d := range req.Documents {
-		doc := protoToDoc(d)
-		if err := s.store.Upsert(ctx, doc); err != nil {
-			resp.FailedCount++
-			resp.Errors = append(resp.Errors, &searchv1.BulkIndexItemError{
-				EntityId:     doc.EntityID,
-				ErrorMessage: err.Error(),
-			})
-			continue
-		}
-		resp.IndexedCount++
+		docs = append(docs, protoToDoc(d))
+	}
+	result, err := s.store.BulkUpsert(ctx, docs)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "bulk index: %v", err)
+	}
+	resp := &searchv1.BulkIndexDocumentsResponse{
+		IndexedCount: int32(result.IndexedCount),
+		FailedCount:  int32(result.FailedCount),
+	}
+	for _, item := range result.Errors {
+		resp.Errors = append(resp.Errors, &searchv1.BulkIndexItemError{
+			EntityId:     item.EntityID,
+			ErrorMessage: item.ErrorMessage,
+		})
 	}
 	return resp, nil
 }
@@ -180,6 +185,7 @@ func protoToDoc(d *searchv1.SearchDocument) search.Document {
 		DocumentType:   d.DocumentType,
 		EntityID:       d.EntityId,
 		FaceID:         d.FaceId,
+		RoutingUserID:  d.RoutingUserId,
 		Title:          d.Title,
 		Subtitle:       d.Subtitle,
 		SearchText:     d.SearchText,
@@ -195,8 +201,16 @@ func buildRouteParams(doc search.Document) *searchv1.RouteParams {
 		ids["userId"] = doc.EntityID
 	case "face":
 		ids["faceId"] = doc.EntityID
-	case "page", "album", "blog", "reel", "story":
-		ids["id"] = doc.EntityID
+	case "page":
+		ids["pageId"] = doc.EntityID
+	case "album":
+		ids["albumId"] = doc.EntityID
+	case "blog":
+		ids["blogId"] = doc.EntityID
+	case "reel":
+		ids["reelId"] = doc.EntityID
+	case "story":
+		ids["storyId"] = doc.EntityID
 	case "face_chat_room":
 		ids["faceId"] = doc.FaceID
 		ids["roomId"] = doc.EntityID
@@ -205,7 +219,11 @@ func buildRouteParams(doc search.Document) *searchv1.RouteParams {
 		ids["loungeId"] = doc.EntityID
 	case "face_profile":
 		ids["faceId"] = doc.FaceID
-		ids["userId"] = doc.EntityID
+		if doc.RoutingUserID != "" {
+			ids["userId"] = doc.RoutingUserID
+		} else {
+			ids["profileId"] = doc.EntityID
+		}
 	case "wall_ticket":
 		ids["faceId"] = doc.FaceID
 		ids["ticketId"] = doc.EntityID

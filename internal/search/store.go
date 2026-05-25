@@ -29,9 +29,11 @@ type Document struct {
 	DocumentType   string `json:"document_type"`
 	EntityID       string `json:"entity_id"`
 	FaceID         string `json:"face_id,omitempty"`
+	RoutingUserID  string `json:"routing_user_id,omitempty"`
 	Title          string `json:"title"`
 	Subtitle       string `json:"subtitle,omitempty"`
 	SearchText     string `json:"search_text"`
+	SearchTextEmail string `json:"search_text_email,omitempty"`
 	ApprovalStatus string `json:"approval_status,omitempty"`
 	UpdatedAtUnix  int64  `json:"updated_at_unix_ms"`
 }
@@ -50,25 +52,7 @@ func (s *Store) EnsureIndex(ctx context.Context) error {
 		return nil
 	}
 
-	mapping := map[string]any{
-		"settings": map[string]any{
-			"number_of_shards":   1,
-			"number_of_replicas": 0,
-		},
-		"mappings": map[string]any{
-			"properties": map[string]any{
-				"document_type":      map[string]string{"type": "keyword"},
-				"entity_id":          map[string]string{"type": "keyword"},
-				"face_id":            map[string]string{"type": "keyword"},
-				"title":              map[string]string{"type": "text"},
-				"subtitle":           map[string]string{"type": "text"},
-				"search_text":        map[string]string{"type": "text"},
-				"approval_status":    map[string]string{"type": "keyword"},
-				"updated_at_unix_ms": map[string]string{"type": "long"},
-			},
-		},
-	}
-	body, _ := json.Marshal(mapping)
+	body, _ := json.Marshal(adminIndexMapping())
 	createRes, err := s.es.Indices.Create(AdminIndexName, s.es.Indices.Create.WithContext(ctx), s.es.Indices.Create.WithBody(bytes.NewReader(body)))
 	if err != nil {
 		return err
@@ -81,10 +65,32 @@ func (s *Store) EnsureIndex(ctx context.Context) error {
 	return nil
 }
 
+func enrichDocumentForIndex(doc *Document) {
+	if doc == nil {
+		return
+	}
+	if doc.SearchTextEmail == "" {
+		if email := extractEmailToken(doc.Title); email != "" {
+			doc.SearchTextEmail = email
+		} else if email := extractEmailToken(doc.SearchText); email != "" {
+			doc.SearchTextEmail = email
+		}
+	}
+}
+
+func extractEmailToken(value string) string {
+	value = strings.TrimSpace(value)
+	if strings.Contains(value, "@") {
+		return value
+	}
+	return ""
+}
+
 func (s *Store) Upsert(ctx context.Context, doc Document) error {
 	if err := s.EnsureIndex(ctx); err != nil {
 		return err
 	}
+	enrichDocumentForIndex(&doc)
 	body, err := json.Marshal(doc)
 	if err != nil {
 		return err
@@ -105,6 +111,89 @@ func (s *Store) Upsert(ctx context.Context, doc Document) error {
 		return fmt.Errorf("index document: %s", string(b))
 	}
 	return nil
+}
+
+type BulkUpsertResult struct {
+	IndexedCount int
+	FailedCount  int
+	Errors       []BulkItemError
+}
+
+type BulkItemError struct {
+	EntityID     string
+	ErrorMessage string
+}
+
+func (s *Store) BulkUpsert(ctx context.Context, docs []Document) (*BulkUpsertResult, error) {
+	if len(docs) == 0 {
+		return &BulkUpsertResult{}, nil
+	}
+	if err := s.EnsureIndex(ctx); err != nil {
+		return nil, err
+	}
+
+	var buf bytes.Buffer
+	for _, doc := range docs {
+		enrichDocumentForIndex(&doc)
+		meta, _ := json.Marshal(map[string]any{
+			"index": map[string]any{
+				"_index": AdminIndexName,
+				"_id":    docID(doc.DocumentType, doc.EntityID),
+			},
+		})
+		payload, err := json.Marshal(doc)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(meta)
+		buf.WriteByte('\n')
+		buf.Write(payload)
+		buf.WriteByte('\n')
+	}
+
+	res, err := s.es.Bulk(bytes.NewReader(buf.Bytes()), s.es.Bulk.WithContext(ctx), s.es.Bulk.WithRefresh("false"))
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+	raw, _ := io.ReadAll(res.Body)
+	if res.IsError() {
+		return nil, fmt.Errorf("bulk index: %s", string(raw))
+	}
+
+	var parsed struct {
+		Errors bool `json:"errors"`
+		Items  []map[string]struct {
+			Status int `json:"status"`
+			Error  struct {
+				Type   string `json:"type"`
+				Reason string `json:"reason"`
+			} `json:"error"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		return nil, fmt.Errorf("parse bulk response: %w", err)
+	}
+
+	out := &BulkUpsertResult{}
+	for i, item := range parsed.Items {
+		for _, v := range item {
+			if v.Status >= 200 && v.Status < 300 {
+				out.IndexedCount++
+			} else {
+				out.FailedCount++
+				entityID := ""
+				if i < len(docs) {
+					entityID = docs[i].EntityID
+				}
+				out.Errors = append(out.Errors, BulkItemError{
+					EntityID:     entityID,
+					ErrorMessage: v.Error.Reason,
+				})
+			}
+		}
+	}
+	return out, nil
 }
 
 func (s *Store) Delete(ctx context.Context, documentType, entityID string) error {
@@ -277,15 +366,30 @@ func UnixMsNow() int64 {
 	return time.Now().UTC().UnixMilli()
 }
 
-// buildAutocompleteSearchBody combines full-token and prefix clauses so short queries
-// (e.g. "patr" → Patrik, "user3" → user30@demo.com) match while typing.
+// buildAutocompleteSearchBody combines search_as_you_type bool_prefix with legacy prefix clauses.
 func buildAutocompleteSearchBody(query string, pageSize, offset int, documentTypes []string) map[string]any {
+	sayFields := []string{
+		"search_text",
+		"search_text._2gram",
+		"search_text._3gram",
+		"title",
+		"title._2gram",
+		"title._3gram",
+	}
 	should := []any{
 		map[string]any{
 			"multi_match": map[string]any{
 				"query":  query,
-				"fields": []string{"search_text", "title^2", "subtitle"},
-				"type":   "best_fields",
+				"type":   "bool_prefix",
+				"fields": sayFields,
+			},
+		},
+		map[string]any{
+			"match": map[string]any{
+				"search_text_email": map[string]any{
+					"query": query,
+					"boost": 3,
+				},
 			},
 		},
 	}
