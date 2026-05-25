@@ -2,6 +2,8 @@
 
 **Version:** [`0.5.0`](./VERSION) · [Changelog](./CHANGELOG.md)
 
+**Author:** Ladislav Kostolny · [01laky@gmail.com](mailto:01laky@gmail.com)
+
 **Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly. **PostgreSQL is authoritative** — Elasticsearch is a read projection only.
 
 ### Three pillars
