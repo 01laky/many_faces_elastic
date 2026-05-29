@@ -8,6 +8,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 | Version       | Theme                          |
 | ------------- | ------------------------------ |
+| [0.5.2](#052) | Patch release index sync       |
+| [0.5.1](#051) | Patch                          |
 | [0.5.0](#050) | Admin search autocomplete RPCs |
 | [0.4.0](#040) | verify-edge-contracts          |
 | [0.3.0](#030) | many_faces_proto submodule     |
