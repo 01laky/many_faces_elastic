@@ -65,7 +65,14 @@ func main() {
 	serverOpts = append(serverOpts, grpc.ChainUnaryInterceptor(server.UnaryAuthInterceptor(cfg.ExpectedWorkerToken)))
 	grpcServer := grpc.NewServer(serverOpts...)
 
-	searchv1.RegisterSearchServiceServer(grpcServer, server.NewSearchService(es, log))
+	// Pass the operator-AI knowledge settings (embed dim / model / expected doc count) so the dense_vector
+	// mapping, the vector_dim drift guard, and the KnowledgeIndexStatus readiness check share one source of truth.
+	searchv1.RegisterSearchServiceServer(grpcServer, server.NewSearchServiceWithKnowledge(
+		es, log,
+		cfg.OperatorAiEmbedDim,
+		cfg.OperatorAiEmbedModel,
+		cfg.OperatorAiExpectedDocCount,
+	))
 
 	// Standard gRPC health service for orchestrators; kept separate from SearchService.Ping (which also checks Elasticsearch).
 	healthServer := health.NewServer()

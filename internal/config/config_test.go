@@ -56,6 +56,58 @@ func TestLoadFromEnv_TrimsAndSplitsCommaURLs(t *testing.T) {
 	}
 }
 
+func TestLoadFromEnv_OperatorAiDefaults(t *testing.T) {
+	t.Setenv(EnvElasticsearchURLs, "http://elasticsearch:9200")
+	t.Setenv(EnvOperatorAiEmbedDim, "")
+	t.Setenv(EnvOperatorAiEmbedModel, "")
+	t.Setenv(EnvOperatorAiExpectedDocCount, "")
+	c, err := LoadFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.OperatorAiEmbedDim != DefaultOperatorAiEmbedDim {
+		t.Fatalf("embed dim default: %d", c.OperatorAiEmbedDim)
+	}
+	if c.OperatorAiEmbedModel != DefaultOperatorAiEmbedModel {
+		t.Fatalf("embed model default: %q", c.OperatorAiEmbedModel)
+	}
+	if c.OperatorAiExpectedDocCount != DefaultOperatorAiExpectedDocCount {
+		t.Fatalf("expected doc count default: %d", c.OperatorAiExpectedDocCount)
+	}
+}
+
+func TestLoadFromEnv_OperatorAiOverrides(t *testing.T) {
+	t.Setenv(EnvElasticsearchURLs, "http://elasticsearch:9200")
+	t.Setenv(EnvOperatorAiEmbedDim, "1024")
+	t.Setenv(EnvOperatorAiEmbedModel, "  custom-embed  ")
+	t.Setenv(EnvOperatorAiExpectedDocCount, "80")
+	c, err := LoadFromEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.OperatorAiEmbedDim != 1024 {
+		t.Fatalf("embed dim: %d", c.OperatorAiEmbedDim)
+	}
+	if c.OperatorAiEmbedModel != "custom-embed" {
+		t.Fatalf("embed model: %q", c.OperatorAiEmbedModel)
+	}
+	if c.OperatorAiExpectedDocCount != 80 {
+		t.Fatalf("expected doc count: %d", c.OperatorAiExpectedDocCount)
+	}
+}
+
+func TestLoadFromEnv_OperatorAiRejectsBadEmbedDim(t *testing.T) {
+	t.Setenv(EnvElasticsearchURLs, "http://elasticsearch:9200")
+	t.Setenv(EnvOperatorAiEmbedDim, "not-a-number")
+	if _, err := LoadFromEnv(); err == nil {
+		t.Fatal("expected error for non-numeric embed dim")
+	}
+	t.Setenv(EnvOperatorAiEmbedDim, "0")
+	if _, err := LoadFromEnv(); err == nil {
+		t.Fatal("expected error for zero embed dim")
+	}
+}
+
 func TestLoadFromEnv_TrimsTLSPaths(t *testing.T) {
 	t.Setenv(EnvGRPCListen, ":50052")
 	t.Setenv(EnvElasticsearchURLs, "http://elasticsearch:9200")

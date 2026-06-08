@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	searchv1 "github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1"
+	"github.com/01laky/many_faces_elastic/internal/config"
 	"github.com/01laky/many_faces_elastic/internal/search"
 )
 
@@ -19,14 +20,34 @@ import (
 // that may perform HTTP calls to Elasticsearch for application purposes.
 type SearchService struct {
 	searchv1.UnimplementedSearchServiceServer
-	es    *elasticsearch.Client
-	store *search.Store
-	log   *slog.Logger
+	es        *elasticsearch.Client
+	store     *search.Store
+	knowledge *search.KnowledgeStore
+	log       *slog.Logger
 }
 
-// NewSearchService wires an Elasticsearch client into the gRPC service implementation.
+// NewSearchService wires an Elasticsearch client into the gRPC service implementation using default
+// operator-AI knowledge settings. Prefer NewSearchServiceWithKnowledge in production wiring so the embed
+// dimension / model / expected doc count come from worker config (spec §5.5).
 func NewSearchService(es *elasticsearch.Client, log *slog.Logger) *SearchService {
-	return &SearchService{es: es, store: search.NewStore(es), log: log}
+	return NewSearchServiceWithKnowledge(
+		es, log,
+		config.DefaultOperatorAiEmbedDim,
+		config.DefaultOperatorAiEmbedModel,
+		config.DefaultOperatorAiExpectedDocCount,
+	)
+}
+
+// NewSearchServiceWithKnowledge wires the service with explicit operator-AI knowledge configuration.
+// embedDim/embedModel/expectedDocCount are the single source of truth for the dense_vector mapping, the
+// vector_dim drift guard, and the KnowledgeIndexStatus readiness check.
+func NewSearchServiceWithKnowledge(es *elasticsearch.Client, log *slog.Logger, embedDim int, embedModel string, expectedDocCount int) *SearchService {
+	return &SearchService{
+		es:        es,
+		store:     search.NewStore(es),
+		knowledge: search.NewKnowledgeStore(es, embedDim, embedModel, expectedDocCount),
+		log:       log,
+	}
 }
 
 // Ping implements the contract used by many_faces_backend for readiness: it verifies Elasticsearch HTTP

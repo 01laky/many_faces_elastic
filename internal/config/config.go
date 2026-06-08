@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -31,6 +32,20 @@ type Config struct {
 	// GrpcMTLSClientCAFile, when set together with GrpcTLSCertFile/GrpcTLSKeyFile, requires presenting a client certificate
 	// issued by this CA (PEM bundle). many_faces_backend must then use Search:WorkerTlsClientCertPath / WorkerTlsClientKeyPath.
 	GrpcMTLSClientCAFile string
+
+	// OperatorAiEmbedDim is the expected embedding vector dimension for the operator-AI knowledge index.
+	// It is the single source of truth for the ES dense_vector mapping `dims` and the drift guard: any
+	// KnowledgeDocument whose vector_dim differs is rejected at index time so backend, worker, and ES can
+	// never silently disagree (spec §5.5). Default 768 matches nomic-embed-text.
+	OperatorAiEmbedDim int
+
+	// OperatorAiEmbedModel is the embedding model version the index was built for (e.g. "nomic-embed-text").
+	// It participates in the versioned index name and the KnowledgeIndexStatus readiness check (model match).
+	OperatorAiEmbedModel string
+
+	// OperatorAiExpectedDocCount is the number of knowledge documents the index is expected to hold when fully
+	// built (the 61 stat bundles in v1). It backs the KnowledgeIndexStatus.ready gate (doc_count == expected).
+	OperatorAiExpectedDocCount int
 }
 
 const (
@@ -46,6 +61,21 @@ const (
 	EnvGrpcTLSKeyFile = "SEARCH_WORKER_GRPC_TLS_KEY_FILE"
 	// EnvGrpcMTLSClientCAFile is an optional PEM bundle of CAs used to verify client certificates (mTLS).
 	EnvGrpcMTLSClientCAFile = "SEARCH_WORKER_GRPC_MTLS_CLIENT_CA_FILE"
+	// EnvOperatorAiEmbedDim sets the expected dense_vector dimension for the operator-AI knowledge index.
+	EnvOperatorAiEmbedDim = "OPERATOR_AI_EMBED_DIM"
+	// EnvOperatorAiEmbedModel sets the embedding model version the knowledge index is built for.
+	EnvOperatorAiEmbedModel = "OPERATOR_AI_EMBED_MODEL"
+	// EnvOperatorAiExpectedDocCount sets the expected fully-built knowledge document count (default 61).
+	EnvOperatorAiExpectedDocCount = "OPERATOR_AI_EXPECTED_DOC_COUNT"
+)
+
+const (
+	// DefaultOperatorAiEmbedDim is the nomic-embed-text output dimension.
+	DefaultOperatorAiEmbedDim = 768
+	// DefaultOperatorAiEmbedModel is the default embedding model version.
+	DefaultOperatorAiEmbedModel = "nomic-embed-text"
+	// DefaultOperatorAiExpectedDocCount is the v1 stat-bundle catalog size.
+	DefaultOperatorAiExpectedDocCount = 61
 )
 
 // LoadFromEnv builds Config from process environment. It returns an error if mandatory values are missing
@@ -73,12 +103,38 @@ func LoadFromEnv() (*Config, error) {
 		return nil, fmt.Errorf("%s contained no valid URLs", EnvElasticsearchURLs)
 	}
 
+	embedDim := DefaultOperatorAiEmbedDim
+	if raw := strings.TrimSpace(os.Getenv(EnvOperatorAiEmbedDim)); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			return nil, fmt.Errorf("%s must be a positive integer, got %q", EnvOperatorAiEmbedDim, raw)
+		}
+		embedDim = parsed
+	}
+
+	embedModel := strings.TrimSpace(os.Getenv(EnvOperatorAiEmbedModel))
+	if embedModel == "" {
+		embedModel = DefaultOperatorAiEmbedModel
+	}
+
+	expectedDocs := DefaultOperatorAiExpectedDocCount
+	if raw := strings.TrimSpace(os.Getenv(EnvOperatorAiExpectedDocCount)); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 0 {
+			return nil, fmt.Errorf("%s must be a non-negative integer, got %q", EnvOperatorAiExpectedDocCount, raw)
+		}
+		expectedDocs = parsed
+	}
+
 	return &Config{
-		GRPCListen:             listen,
-		ElasticsearchAddresses: addrs,
-		ExpectedWorkerToken:    strings.TrimSpace(os.Getenv(EnvExpectedToken)),
-		GrpcTLSCertFile:        strings.TrimSpace(os.Getenv(EnvGrpcTLSCertFile)),
-		GrpcTLSKeyFile:         strings.TrimSpace(os.Getenv(EnvGrpcTLSKeyFile)),
-		GrpcMTLSClientCAFile:   strings.TrimSpace(os.Getenv(EnvGrpcMTLSClientCAFile)),
+		GRPCListen:                 listen,
+		ElasticsearchAddresses:     addrs,
+		ExpectedWorkerToken:        strings.TrimSpace(os.Getenv(EnvExpectedToken)),
+		GrpcTLSCertFile:            strings.TrimSpace(os.Getenv(EnvGrpcTLSCertFile)),
+		GrpcTLSKeyFile:             strings.TrimSpace(os.Getenv(EnvGrpcTLSKeyFile)),
+		GrpcMTLSClientCAFile:       strings.TrimSpace(os.Getenv(EnvGrpcMTLSClientCAFile)),
+		OperatorAiEmbedDim:         embedDim,
+		OperatorAiEmbedModel:       embedModel,
+		OperatorAiExpectedDocCount: expectedDocs,
 	}, nil
 }

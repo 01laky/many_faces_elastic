@@ -2,18 +2,18 @@
 
 **Monorepo guides (canonical):**
 
-| Guide | Contents |
-| ----- | -------- |
-| [`elasticsearch-local-dev.md`](../../docs/guides/elasticsearch-local-dev.md) | Compose, ports, proto sync, backend `Search:*` env |
-| [`elasticsearch-search-features-overview.md`](../../docs/guides/elasticsearch-search-features-overview.md) | Capability summary, CI, smoke |
-| [`elasticsearch-grpc-tls-mtls.md`](../../docs/guides/elasticsearch-grpc-tls-mtls.md) | TLS/mTLS for backend ↔ worker |
-| [`admin-settings-infrastructure-smoke-tests.md`](../../docs/guides/admin-settings-infrastructure-smoke-tests.md) | Admin UI search health panel |
+| Guide                                                                                                            | Contents                                           |
+| ---------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| [`elasticsearch-local-dev.md`](../../docs/guides/elasticsearch-local-dev.md)                                     | Compose, ports, proto sync, backend `Search:*` env |
+| [`elasticsearch-search-features-overview.md`](../../docs/guides/elasticsearch-search-features-overview.md)       | Capability summary, CI, smoke                      |
+| [`elasticsearch-grpc-tls-mtls.md`](../../docs/guides/elasticsearch-grpc-tls-mtls.md)                             | TLS/mTLS for backend ↔ worker                      |
+| [`admin-settings-infrastructure-smoke-tests.md`](../../docs/guides/admin-settings-infrastructure-smoke-tests.md) | Admin UI search health panel                       |
 
 ## Ports (host)
 
-| Service | Host port | Container |
-| ------- | --------- | --------- |
-| Elasticsearch HTTP | **59200** | `elasticsearch-dev:9200` |
+| Service            | Host port | Container                 |
+| ------------------ | --------- | ------------------------- |
+| Elasticsearch HTTP | **59200** | `elasticsearch-dev:9200`  |
 | Search worker gRPC | **59202** | `search-worker-dev:50052` |
 
 ## Diagram: data path

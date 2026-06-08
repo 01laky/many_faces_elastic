@@ -116,6 +116,8 @@ docker run --rm \
 
 Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned with the `go_package` option in the `.proto` file (`github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1`).
 
+**Local (non-Docker) one-liner:** `make gen` (or `./scripts/regen-go-stubs.sh`) installs `protoc-gen-go` / `protoc-gen-go-grpc` into `$(go env GOPATH)/bin` if missing and runs `protoc` against the canonical proto. Run this after any change to `search.proto` (e.g. the operator-AI RAG knowledge RPCs: `IndexKnowledge`, `DeleteKnowledge`, `SemanticSearch`, `KnowledgeIndexStatus`) before `go build ./...`.
+
 **Standalone clone:** run **`git submodule update --init --recursive`** so **`many_faces_proto/`** exists under this repo (nested submodule, Strategy B).
 
 ## Authenticating callers (dev → prod path)

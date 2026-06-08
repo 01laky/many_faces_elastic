@@ -22,12 +22,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	SearchService_Ping_FullMethodName               = "/manyfaces.search.v1.SearchService/Ping"
-	SearchService_IndexDocument_FullMethodName      = "/manyfaces.search.v1.SearchService/IndexDocument"
-	SearchService_DeleteDocument_FullMethodName     = "/manyfaces.search.v1.SearchService/DeleteDocument"
-	SearchService_BulkIndexDocuments_FullMethodName = "/manyfaces.search.v1.SearchService/BulkIndexDocuments"
-	SearchService_ListDocumentIds_FullMethodName    = "/manyfaces.search.v1.SearchService/ListDocumentIds"
-	SearchService_Autocomplete_FullMethodName       = "/manyfaces.search.v1.SearchService/Autocomplete"
+	SearchService_Ping_FullMethodName                 = "/manyfaces.search.v1.SearchService/Ping"
+	SearchService_IndexDocument_FullMethodName        = "/manyfaces.search.v1.SearchService/IndexDocument"
+	SearchService_DeleteDocument_FullMethodName       = "/manyfaces.search.v1.SearchService/DeleteDocument"
+	SearchService_BulkIndexDocuments_FullMethodName   = "/manyfaces.search.v1.SearchService/BulkIndexDocuments"
+	SearchService_ListDocumentIds_FullMethodName      = "/manyfaces.search.v1.SearchService/ListDocumentIds"
+	SearchService_Autocomplete_FullMethodName         = "/manyfaces.search.v1.SearchService/Autocomplete"
+	SearchService_IndexKnowledge_FullMethodName       = "/manyfaces.search.v1.SearchService/IndexKnowledge"
+	SearchService_DeleteKnowledge_FullMethodName      = "/manyfaces.search.v1.SearchService/DeleteKnowledge"
+	SearchService_SemanticSearch_FullMethodName       = "/manyfaces.search.v1.SearchService/SemanticSearch"
+	SearchService_KnowledgeIndexStatus_FullMethodName = "/manyfaces.search.v1.SearchService/KnowledgeIndexStatus"
 )
 
 // SearchServiceClient is the client API for SearchService service.
@@ -42,6 +46,11 @@ type SearchServiceClient interface {
 	BulkIndexDocuments(ctx context.Context, in *BulkIndexDocumentsRequest, opts ...grpc.CallOption) (*BulkIndexDocumentsResponse, error)
 	ListDocumentIds(ctx context.Context, in *ListDocumentIdsRequest, opts ...grpc.CallOption) (*ListDocumentIdsResponse, error)
 	Autocomplete(ctx context.Context, in *AutocompleteRequest, opts ...grpc.CallOption) (*AutocompleteResponse, error)
+	// Operator-AI RAG knowledge surface (v1).
+	IndexKnowledge(ctx context.Context, in *IndexKnowledgeRequest, opts ...grpc.CallOption) (*IndexKnowledgeResponse, error)
+	DeleteKnowledge(ctx context.Context, in *DeleteKnowledgeRequest, opts ...grpc.CallOption) (*DeleteKnowledgeResponse, error)
+	SemanticSearch(ctx context.Context, in *SemanticSearchRequest, opts ...grpc.CallOption) (*SemanticSearchResponse, error)
+	KnowledgeIndexStatus(ctx context.Context, in *KnowledgeIndexStatusRequest, opts ...grpc.CallOption) (*KnowledgeIndexStatusResponse, error)
 }
 
 type searchServiceClient struct {
@@ -112,6 +121,46 @@ func (c *searchServiceClient) Autocomplete(ctx context.Context, in *Autocomplete
 	return out, nil
 }
 
+func (c *searchServiceClient) IndexKnowledge(ctx context.Context, in *IndexKnowledgeRequest, opts ...grpc.CallOption) (*IndexKnowledgeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IndexKnowledgeResponse)
+	err := c.cc.Invoke(ctx, SearchService_IndexKnowledge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) DeleteKnowledge(ctx context.Context, in *DeleteKnowledgeRequest, opts ...grpc.CallOption) (*DeleteKnowledgeResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteKnowledgeResponse)
+	err := c.cc.Invoke(ctx, SearchService_DeleteKnowledge_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) SemanticSearch(ctx context.Context, in *SemanticSearchRequest, opts ...grpc.CallOption) (*SemanticSearchResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SemanticSearchResponse)
+	err := c.cc.Invoke(ctx, SearchService_SemanticSearch_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *searchServiceClient) KnowledgeIndexStatus(ctx context.Context, in *KnowledgeIndexStatusRequest, opts ...grpc.CallOption) (*KnowledgeIndexStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(KnowledgeIndexStatusResponse)
+	err := c.cc.Invoke(ctx, SearchService_KnowledgeIndexStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SearchServiceServer is the server API for SearchService service.
 // All implementations must embed UnimplementedSearchServiceServer
 // for forward compatibility.
@@ -124,6 +173,11 @@ type SearchServiceServer interface {
 	BulkIndexDocuments(context.Context, *BulkIndexDocumentsRequest) (*BulkIndexDocumentsResponse, error)
 	ListDocumentIds(context.Context, *ListDocumentIdsRequest) (*ListDocumentIdsResponse, error)
 	Autocomplete(context.Context, *AutocompleteRequest) (*AutocompleteResponse, error)
+	// Operator-AI RAG knowledge surface (v1).
+	IndexKnowledge(context.Context, *IndexKnowledgeRequest) (*IndexKnowledgeResponse, error)
+	DeleteKnowledge(context.Context, *DeleteKnowledgeRequest) (*DeleteKnowledgeResponse, error)
+	SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error)
+	KnowledgeIndexStatus(context.Context, *KnowledgeIndexStatusRequest) (*KnowledgeIndexStatusResponse, error)
 	mustEmbedUnimplementedSearchServiceServer()
 }
 
@@ -151,6 +205,18 @@ func (UnimplementedSearchServiceServer) ListDocumentIds(context.Context, *ListDo
 }
 func (UnimplementedSearchServiceServer) Autocomplete(context.Context, *AutocompleteRequest) (*AutocompleteResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Autocomplete not implemented")
+}
+func (UnimplementedSearchServiceServer) IndexKnowledge(context.Context, *IndexKnowledgeRequest) (*IndexKnowledgeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IndexKnowledge not implemented")
+}
+func (UnimplementedSearchServiceServer) DeleteKnowledge(context.Context, *DeleteKnowledgeRequest) (*DeleteKnowledgeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteKnowledge not implemented")
+}
+func (UnimplementedSearchServiceServer) SemanticSearch(context.Context, *SemanticSearchRequest) (*SemanticSearchResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SemanticSearch not implemented")
+}
+func (UnimplementedSearchServiceServer) KnowledgeIndexStatus(context.Context, *KnowledgeIndexStatusRequest) (*KnowledgeIndexStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method KnowledgeIndexStatus not implemented")
 }
 func (UnimplementedSearchServiceServer) mustEmbedUnimplementedSearchServiceServer() {}
 func (UnimplementedSearchServiceServer) testEmbeddedByValue()                       {}
@@ -281,6 +347,78 @@ func _SearchService_Autocomplete_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SearchService_IndexKnowledge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IndexKnowledgeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).IndexKnowledge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_IndexKnowledge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).IndexKnowledge(ctx, req.(*IndexKnowledgeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_DeleteKnowledge_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteKnowledgeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).DeleteKnowledge(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_DeleteKnowledge_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).DeleteKnowledge(ctx, req.(*DeleteKnowledgeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_SemanticSearch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SemanticSearchRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).SemanticSearch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_SemanticSearch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).SemanticSearch(ctx, req.(*SemanticSearchRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SearchService_KnowledgeIndexStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(KnowledgeIndexStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SearchServiceServer).KnowledgeIndexStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: SearchService_KnowledgeIndexStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SearchServiceServer).KnowledgeIndexStatus(ctx, req.(*KnowledgeIndexStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // SearchService_ServiceDesc is the grpc.ServiceDesc for SearchService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -311,6 +449,22 @@ var SearchService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Autocomplete",
 			Handler:    _SearchService_Autocomplete_Handler,
+		},
+		{
+			MethodName: "IndexKnowledge",
+			Handler:    _SearchService_IndexKnowledge_Handler,
+		},
+		{
+			MethodName: "DeleteKnowledge",
+			Handler:    _SearchService_DeleteKnowledge_Handler,
+		},
+		{
+			MethodName: "SemanticSearch",
+			Handler:    _SearchService_SemanticSearch_Handler,
+		},
+		{
+			MethodName: "KnowledgeIndexStatus",
+			Handler:    _SearchService_KnowledgeIndexStatus_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

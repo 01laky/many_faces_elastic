@@ -8,6 +8,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 | Version       | Theme                          |
 | ------------- | ------------------------------ |
+| [0.6.0](#060) | Operator-AI RAG knowledge RPCs |
 | [0.5.2](#052) | Patch release index sync       |
 | [0.5.1](#051) | Patch                          |
 | [0.5.0](#050) | Admin search autocomplete RPCs |
@@ -19,6 +20,37 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+---
+
+## [0.6.0]
+
+### Added
+
+- Operator-AI RAG knowledge surface on the Go search-worker (operator-ai-rag-retrieval-refactor v1):
+  - New gRPC handlers `IndexKnowledge`, `DeleteKnowledge`, `SemanticSearch`, `KnowledgeIndexStatus` on
+    `SearchService`, implemented against the updated `manyfaces.search.v1` proto. The user-facing search
+    RPCs (`Autocomplete`, `IndexDocument`, …) are unchanged.
+  - Versioned `operator-ai-knowledge-v{n}` index + `operator-ai-knowledge` alias lifecycle: build a new
+    versioned index (`dense_vector` cosine kNN, BM25 text fields, keyword filters, integer `bundle_index`),
+    repoint the alias atomically, drop the old index (zero-downtime re-embed, §17.3).
+  - `SemanticSearch` hybrid retrieval: kNN on `vector` + BM25 `multi_match` on text fields, both filtered by
+    `source_types`, fused with Reciprocal Rank Fusion (`score = Σ 1/(rrf_k + rank)`, default `rrf_k=60`);
+    deterministic tie-break (score, then `bundle_index`, then `knowledge_id`); `degraded` flag when only one
+    retriever is available.
+  - `vector_dim` drift guard: `IndexKnowledge` rejects any document whose embedded vector length differs from
+    the configured embedding dimension and reports it as a `BulkIndexItemError`.
+  - `KnowledgeIndexStatus` readiness/health: alias, active index, doc count vs expected, embed model version,
+    vector dim, `ready` (alias exists AND doc_count == expected AND model matches), `degraded`,
+    `last_indexed_unix_ms` — backs the backend cold-start planner-fallback gate and the admin status panel.
+- Worker config keys `OPERATOR_AI_EMBED_DIM` (default 768), `OPERATOR_AI_EMBED_MODEL`
+  (default `nomic-embed-text`), `OPERATOR_AI_EXPECTED_DOC_COUNT` (default 61) — single source of truth for
+  the dense_vector mapping, the drift guard, and the readiness check.
+- `scripts/regen-go-stubs.sh` and a `Makefile` (`gen`/`build`/`test`/`lint`) to regenerate the Go stubs.
 
 ### Changed
 
@@ -96,7 +128,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 - Single-node Elasticsearch Docker compose for local dev.
 
-[Unreleased]: https://github.com/01laky/many_faces_elastic/compare/v0.5.2...HEAD
+[Unreleased]: https://github.com/01laky/many_faces_elastic/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/01laky/many_faces_elastic/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/01laky/many_faces_elastic/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/01laky/many_faces_elastic/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/01laky/many_faces_elastic/compare/v0.4.0...v0.5.0
