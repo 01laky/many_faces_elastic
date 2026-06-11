@@ -1,4 +1,4 @@
-# many_faces_elastic
+# Many Faces Elastic
 
 <!-- readme-badges:start -->
 
@@ -16,88 +16,116 @@
 
 **Author:** Ladislav Kostolny · [01laky@gmail.com](mailto:01laky@gmail.com)
 
-**Optional search tier for Many Faces AI.** This repo packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never talk to Elasticsearch directly. **PostgreSQL is authoritative** — Elasticsearch is a read projection only.
+> **Optional search tier for Many Faces AI.** Packages a dev Elasticsearch node plus a Go gRPC search-worker. The backend talks to the worker; clients never touch Elasticsearch directly. **PostgreSQL is authoritative** — Elasticsearch is a read projection only. Disable with `ENABLE_ELASTICSEARCH=0`.
 
-### Three pillars
+**Canonical repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic)
 
-| Pillar            | Highlights                                                                                                                                                            |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Security**      | Worker **gRPC token** + optional **TLS**; ES not exposed to clients; backend-only integration path. Operator notes: [`docs/search-stack.md`](./docs/search-stack.md). |
-| **AI**            | _Not applicable_ — full-text search index only (future: semantic search via `many_faces_ai` per platform roadmap).                                                    |
-| **Configuration** | Toggle stack: **`ENABLE_ELASTICSEARCH=0`**; host ports **`59200`** (ES) / **`59202`** (gRPC); backend **`SearchOptions`** + admin infra panel.                        |
+---
 
-**Canonical GitHub repository:** [github.com/01laky/many_faces_elastic](https://github.com/01laky/many_faces_elastic) — default branch **`main`**.  
-Standalone clone: `git clone git@github.com:01laky/many_faces_elastic.git` (HTTPS: `https://github.com/01laky/many_faces_elastic.git`). In the **many_faces_main** monorepo this tree is typically checked out as the `many_faces_elastic/` git submodule ([monorepo submodule guide](https://github.com/01laky/many_faces_main/blob/main/docs/guides/git-submodules.md)).
+## Quick Start
 
-Optional **Elasticsearch** stack plus a colocated **Go gRPC search-worker** for the Many Faces monorepo. Together they provide a **read-optimized search projection** (full-text, facets, autocomplete later). **PostgreSQL remains the system of record**; this repository ships Docker tooling and the worker source. The **canonical `.proto`** contract lives in **`many_faces_proto`** and is consumed by **`many_faces_backend`** (C# gRPC client) and eventually **`many_faces_ai`** (Python client).
+```bash
+# Full stack (Elasticsearch enabled by default)
+cd many_faces_main
+./scripts/start-all-dev.sh
 
-**Operator notes (TLS, smoke, CI pointers):** [`docs/search-stack.md`](./docs/search-stack.md).
+# Standalone
+cd many_faces_elastic
+cp .env.example .env
+./scripts/start-elasticsearch.sh
+
+# Skip Elasticsearch entirely
+ENABLE_ELASTICSEARCH=0 ./scripts/start-all-dev.sh
+```
+
+**Ports (development):**
+
+| Endpoint           | Host              | Container |
+| ------------------ | ----------------- | --------- |
+| Elasticsearch HTTP | `localhost:59200` | `9200`    |
+| Search-worker gRPC | `localhost:59202` | `50052`   |
+
+---
+
+## Architecture
 
 ```mermaid
 flowchart LR
     clients["portal / admin / mobile"] --> be["many_faces_backend<br/>REST search APIs"]
     be -->|"gRPC :50052"| worker["search-worker<br/>Go"]
     worker -->|"HTTP :9200"| es["Elasticsearch<br/>read index"]
-    pg["PostgreSQL<br/>source of truth"] -.-> be
+    pg["PostgreSQL<br/>source of truth"] -.->|"system of record"| be
 ```
 
-## Image and licensing
+**Trust boundary:** Browsers, SPAs, and the mobile app **never** call Elasticsearch or the worker gRPC directly — they only call `many_faces_backend` REST APIs.
 
-This submodule uses the **official Elastic** image `docker.elastic.co/elasticsearch/elasticsearch`. Elastic Stack components are subject to the **Elastic License v2** (not Apache 2.0). For strict OSS-only deployments, evaluate **OpenSearch** instead and align client libraries and documentation across the monorepo.
+---
 
-## Architecture (v1)
+## Three Pillars
 
-| Component                               | Role                                                                                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Elasticsearch**                       | Stores the search index; exposes HTTP on port `9200` inside the compose network.                                                            |
-| **search-worker** (`cmd/search-worker`) | The **only** shipping path that may call Elasticsearch HTTP for application logic. Exposes **gRPC** on `50052` inside the container.        |
-| **many_faces_backend**                  | REST/OpenAPI for products; calls the worker via **gRPC** (`Grpc.Net.Client`). Does **not** use Elasticsearch HTTP for the main search path. |
+| Pillar            | Highlights                                                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Security**      | Worker **gRPC token** (`x-search-worker-token`) + optional **TLS/mTLS**; Elasticsearch not exposed to clients; backend-only integration path.          |
+| **AI**            | Hosts the **`operator-ai-knowledge`** index (dense vectors + BM25) used for RAG retrieval — kNN+BM25+RRF over stat-bundle descriptors.                 |
+| **Configuration** | Toggle: `ENABLE_ELASTICSEARCH=0`; host ports `59200`/`59202`; backend `SearchOptions` (`Search__Enabled`, `Search__WorkerGrpcUrl`); admin infra panel. |
 
-Browsers, SPAs, and mobile apps **never** call the worker or Elasticsearch directly.
+---
 
-## Ports (development defaults)
+## Components
 
-| Direction                                                    | Value                                                             |
-| ------------------------------------------------------------ | ----------------------------------------------------------------- |
-| Host → Elasticsearch HTTP                                    | `localhost:59200` → container `9200`                              |
-| Host → worker gRPC (debugging / grpcurl)                     | `localhost:59202` → container `50052`                             |
-| Backend container → worker                                   | `http://search-worker-dev:50052` on `many_faces_main_dev-network` |
-| Worker → Elasticsearch (inside `many_faces_elastic` compose) | `http://elasticsearch:9200` (Docker **service** DNS name)         |
+| Component                               | Role                                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Elasticsearch**                       | Stores the search index + operator-ai-knowledge vectors; HTTP on port `9200` inside the compose network |
+| **search-worker** (`cmd/search-worker`) | **Only** path that calls Elasticsearch for application logic; exposes gRPC on `50052`                   |
+| **many_faces_backend**                  | Calls the worker via `Grpc.Net.Client`; does not use Elasticsearch HTTP directly                        |
 
-## Requirements
+---
 
-- Docker with Compose v2.
-- Roughly **1 GiB+** free RAM for a comfortable single-node dev Elasticsearch (`512m` JVM heap by default).
-- **Go 1.23+** on the host only if you build outside Docker; CI and the provided Dockerfile compile the worker for you.
+## Search RPCs (v1)
 
-## Quick start (standalone)
+| RPC                                  | Purpose                                           |
+| ------------------------------------ | ------------------------------------------------- |
+| `Ping`                               | Health — Elasticsearch reachability from worker   |
+| `IndexDocument` / `DeleteDocument`   | Incremental index maintenance                     |
+| `BulkIndexDocuments`                 | Reconciliation batch upsert                       |
+| `ListDocumentIds`                    | Orphan cleanup during reconciliation              |
+| `Autocomplete`                       | Operator global search (prefix / multi_match)     |
+| `IndexKnowledge` / `DeleteKnowledge` | RAG knowledge index (operator-ai-knowledge)       |
+| `SemanticSearch`                     | kNN+BM25 hybrid retrieval (RRF) for RAG bundles   |
+| `KnowledgeIndexStatus`               | Index doc count, model, dimension, ready/degraded |
 
-```bash
-cp .env.example .env   # optional overrides
-./scripts/start-elasticsearch.sh
-```
+**Index:** `manyfaces-admin-v1` (single index, `document_type` field). `operator-ai-knowledge` index for RAG vectors.
 
-- Elasticsearch HTTP: `http://localhost:59200`
-- Worker gRPC: `http://localhost:59202` (plaintext h2c — dev only)
+---
 
-`docker compose up` starts **both** `elasticsearch` and `search-worker`. The worker refuses to start without `SEARCH_WORKER_ELASTICSEARCH_URLS` (set in `docker-compose.yml` by default).
+## Authentication and TLS
 
-## TLS / mTLS smoke (CI + manual)
+| Environment | Setup                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------- |
+| **Dev**     | Optional shared secret: `SEARCH_WORKER_EXPECTED_TOKEN` on worker + `Search__WorkerAuthToken` on API |
+| **TLS**     | `SEARCH_WORKER_GRPC_TLS_CERT_FILE` + `SEARCH_WORKER_GRPC_TLS_KEY_FILE` (PEM) on worker              |
+| **mTLS**    | `SEARCH_WORKER_GRPC_MTLS_CLIENT_CA_FILE` to require client certificates                             |
+| **Backend** | `Search__WorkerGrpcUrl=https://…` + optional CA/cert/key paths (`Search__WorkerTls*`)               |
 
-From the monorepo root (requires **OpenSSL**, **Docker**, **grpcurl**, **.NET 10 SDK**):
+**TLS smoke test:**
 
 ```bash
 chmod +x many_faces_elastic/scripts/smoke-grpc-tls.sh
 many_faces_elastic/scripts/smoke-grpc-tls.sh
 ```
 
-This uses **`docker-compose.tls-smoke.yml`** (host ports **59210** / **59211**), then **`dotnet test`** against **`SearchWorkerTlsEndToEndSmokeTests`**. Set **`RUN_DOTNET_TLS_SMOKE=0`** to run **grpcurl** only. The smoke script sets **world-readable permissions on the ephemeral PEM directory** so the **distroless nonroot** worker process can read the bind-mounted certs. See **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**.
+Uses `docker-compose.tls-smoke.yml` (host ports `59210`/`59211`). Set `RUN_DOTNET_TLS_SMOKE=0` to run grpcurl only.
 
-## Regenerating Go stubs (from `many_faces_proto`)
+Full guide: [`../docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)
 
-If you change **`many_faces_proto/proto/manyfaces/search/v1/search.proto`**, regenerate Go into **`gen/`** from this repository root:
+---
+
+## Regenerating Go Stubs
+
+When `many_faces_proto/proto/manyfaces/search/v1/search.proto` changes:
 
 ```bash
+# Docker (no local protoc required)
 docker run --rm \
   -v "$(pwd)":/w \
   -v "$(pwd)/many_faces_proto":/mfproto:ro \
@@ -110,28 +138,25 @@ docker run --rm \
   protoc -I /mfproto/proto \
     --go_out=gen --go_opt=paths=source_relative \
     --go-grpc_out=gen --go-grpc_opt=paths=source_relative \
-    manyfaces/search/v1/search.proto
-'
+    manyfaces/search/v1/search.proto'
+
+# Local (if protoc is on PATH)
+make gen
+# or
+./scripts/regen-go-stubs.sh
 ```
 
-Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned with the `go_package` option in the `.proto` file (`github.com/01laky/many_faces_elastic/gen/manyfaces/search/v1`).
+Generated files appear under `gen/manyfaces/search/v1/`.
 
-**Local (non-Docker) one-liner:** `make gen` (or `./scripts/regen-go-stubs.sh`) installs `protoc-gen-go` / `protoc-gen-go-grpc` into `$(go env GOPATH)/bin` if missing and runs `protoc` against the canonical proto. Run this after any change to `search.proto` (e.g. the operator-AI RAG knowledge RPCs: `IndexKnowledge`, `DeleteKnowledge`, `SemanticSearch`, `KnowledgeIndexStatus`) before `go build ./...`.
+---
 
-**Standalone clone:** run **`git submodule update --init --recursive`** so **`many_faces_proto/`** exists under this repo (nested submodule, Strategy B).
+## Requirements
 
-## Authenticating callers (dev → prod path)
+- **Docker + Compose v2** (required)
+- **~1 GiB+ free RAM** for single-node dev Elasticsearch (512 MB JVM heap by default)
+- **Go 1.23+** on host only when building outside Docker
 
-- **Dev:** optional shared secret: set `SEARCH_WORKER_EXPECTED_TOKEN` for the worker and the same value in **`Search__WorkerAuthToken`** on the API. The worker enforces metadata header `x-search-worker-token` for application RPCs; **gRPC health** checks are exempt.
-- **TLS / mTLS:** set **`SEARCH_WORKER_GRPC_TLS_CERT_FILE`** and **`SEARCH_WORKER_GRPC_TLS_KEY_FILE`** (PEM) to enable TLS on the gRPC listener; set **`SEARCH_WORKER_GRPC_MTLS_CLIENT_CA_FILE`** to require client certificates. On **`many_faces_backend`**, use **`Search__WorkerGrpcUrl=https://…`** and optional **`Search__WorkerTlsServerCaPath`**, **`Search__WorkerTlsClientCertPath`**, **`Search__WorkerTlsClientKeyPath`**, **`Search__WorkerGrpcTlsServerName`** (see monorepo **[`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)**).
-- **Prod (recommended direction):** TLS for gRPC plus **mTLS** and/or a strong service identity (token alone is insufficient on hostile networks). Network allowlisting alone is insufficient.
-
-## Monorepo integration
-
-- Submodule path: `many_faces_elastic/` under `many_faces_main`.
-- **Parent-repo documentation (features, TLS, CI):** [`docs/guides/elasticsearch-search-features-overview.md`](../docs/guides/elasticsearch-search-features-overview.md), [`docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md), [`docs/guides/elasticsearch-local-dev.md`](../docs/guides/elasticsearch-local-dev.md), [`docs/guides/admin-global-search-autocomplete.md`](../docs/guides/admin-global-search-autocomplete.md).
-- Full dev stack: `ENABLE_ELASTICSEARCH=1 ./scripts/start-all-dev.sh` attaches **`elasticsearch-dev`** and **`search-worker-dev`** to **`many_faces_main_dev-network`**.
-- Backend configuration: see **`docs/guides/elasticsearch-local-dev.md`** in the monorepo (`Search__Enabled`, `Search__WorkerGrpcUrl`, optional `Search__WorkerAuthToken`).
+---
 
 ## Stop
 
@@ -139,23 +164,37 @@ Generated files appear under `gen/manyfaces/search/v1/` and must stay aligned wi
 ./scripts/stop-elasticsearch.sh
 ```
 
-This runs `docker compose down` for this project (Elasticsearch + worker).
+---
 
-## Search RPCs (v1)
+## Monorepo Integration
 
-| RPC                                | Purpose                                         |
-| ---------------------------------- | ----------------------------------------------- |
-| `Ping`                             | Health — Elasticsearch reachability from worker |
-| `IndexDocument` / `DeleteDocument` | Incremental index maintenance                   |
-| `BulkIndexDocuments`               | Reconciliation batch upsert                     |
-| `ListDocumentIds`                  | Orphan cleanup during reconciliation            |
-| `Autocomplete`                     | Operator global search (prefix / multi_match)   |
+- Submodule path: `many_faces_elastic/` under `many_faces_main`
+- Backend config: `Search__Enabled`, `Search__WorkerGrpcUrl` (e.g. `http://search-worker-dev:50052`), optional `Search__WorkerAuthToken`
+- Full dev stack: `ENABLE_ELASTICSEARCH=1 ./scripts/start-all-dev.sh` attaches containers to `many_faces_main_dev-network`
+- Monorepo guides: [`../docs/guides/elasticsearch-search-features-overview.md`](../docs/guides/elasticsearch-search-features-overview.md) · [`../docs/guides/elasticsearch-local-dev.md`](../docs/guides/elasticsearch-local-dev.md) · [`../docs/guides/admin-global-search-autocomplete.md`](../docs/guides/admin-global-search-autocomplete.md)
 
-Index name: **`manyfaces-admin-v1`** (single index, `document_type` field). Backend calls these over gRPC; admin SPA uses REST only.
+---
 
-**Tests:** `go test ./...` from this repo (table tests under `internal/search/`). Monorepo gate: `node scripts/verify-admin-global-search-tests.mjs`.
+## Documentation
 
-## Out of scope (later phases)
+| Topic                        | Link                                                                                                                   |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **Search features overview** | [`../docs/guides/elasticsearch-search-features-overview.md`](../docs/guides/elasticsearch-search-features-overview.md) |
+| **Local dev wiring**         | [`../docs/guides/elasticsearch-local-dev.md`](../docs/guides/elasticsearch-local-dev.md)                               |
+| **TLS / mTLS**               | [`../docs/guides/elasticsearch-grpc-tls-mtls.md`](../docs/guides/elasticsearch-grpc-tls-mtls.md)                       |
+| **Admin global search**      | [`../docs/guides/admin-global-search-autocomplete.md`](../docs/guides/admin-global-search-autocomplete.md)             |
+| **RAG retrieval**            | [`../docs/guides/operator-ai-rag-retrieval.md`](../docs/guides/operator-ai-rag-retrieval.md)                           |
+| **Operator notes**           | [`docs/search-stack.md`](./docs/search-stack.md)                                                                       |
+| **Monorepo docs hub**        | [`../docs/README.md`](../docs/README.md)                                                                               |
 
-- Production clustering, TLS everywhere, Elastic Cloud auth wiring beyond placeholders.
-- Portal/member-facing search UI (admin header autocomplete is shipped — see [`docs/guides/admin-global-search-autocomplete.md`](../docs/guides/admin-global-search-autocomplete.md)).
+---
+
+## Licensing Note
+
+This submodule uses the **official Elastic** image (`docker.elastic.co/elasticsearch/elasticsearch`). Elastic Stack components are subject to the **Elastic License v2** (not Apache 2.0). For strict OSS-only deployments, evaluate **OpenSearch** as an alternative.
+
+---
+
+## Project Status
+
+Active optional search tier for the Many Faces AI monorepo. v0.6.0 — admin autocomplete, SearchOutbox reconciliation, operator-ai-knowledge RAG index (semantic search via kNN+BM25+RRF), TLS/mTLS smoke, and Go tests. Tracked in [`CHANGELOG.md`](./CHANGELOG.md).
