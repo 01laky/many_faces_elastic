@@ -27,6 +27,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 ---
 
+## [0.6.1]
+
+### Changed
+
+- Align the `many_faces_proto` submodule pointer to `d03301c` (latest), matching `many_faces_backend`/`many_faces_ai` for monorepo-wide proto consistency. The bump only adds the additive `health.proto` `GenerateRequest` fields (per-call temperature/stop/model); the `manyfaces.search.v1` contract and search-worker code are unchanged.
+
+---
+
 ## [0.6.0]
 
 ### Added
@@ -128,7 +136,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 - Single-node Elasticsearch Docker compose for local dev.
 
-[Unreleased]: https://github.com/01laky/many_faces_elastic/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/01laky/many_faces_elastic/compare/v0.6.1...HEAD
+[0.6.1]: https://github.com/01laky/many_faces_elastic/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/01laky/many_faces_elastic/compare/v0.5.2...v0.6.0
 [0.5.2]: https://github.com/01laky/many_faces_elastic/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/01laky/many_faces_elastic/compare/v0.5.0...v0.5.1
