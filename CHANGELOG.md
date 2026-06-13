@@ -72,14 +72,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 
 - Add README shield badges (version, CI, stack tech) via sync-readme-badges.py.
 
-### Added
-
-- Add README shield badges (version, CI, stack tech) via sync-readme-badges.py.
-
-### Changed
-
-### Fixed
-
 ---
 
 ## [0.5.1]
@@ -87,14 +79,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) — **version h
 ### Changed
 
 - Document project author (Ladislav Kostolny, 01laky@gmail.com) in README and standard manifests.
-
-### Added
-
-### Changed
-
-- Document project author (Ladislav Kostolny, 01laky@gmail.com) in README and standard manifests.
-
-### Fixed
 
 ---
 

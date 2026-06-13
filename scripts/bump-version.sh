@@ -39,8 +39,12 @@ def block(n):
 blocks = block("Added") + block("Changed") + block("Fixed")
 if not blocks.strip(): blocks = "### Added\n\n"
 new_release = f"## [{new}]\n\n{blocks}".rstrip() + "\n"
-insert = f"## [Unreleased]\n\n### Added\n\n### Changed\n\n### Fixed\n\n---\n\n{new_release}\n"
-text = text.replace(marker, insert, 1)
+# Rebuild the region around [Unreleased] without leaving its old body behind. Replacing only the
+# "## [Unreleased]" heading kept the previous Unreleased entries, duplicating them into the new release.
+before = text.split(marker, 1)[0]
+rest = after.split(sep, 1)[1]
+fresh_unreleased = "## [Unreleased]\n\n### Added\n\n### Changed\n\n### Fixed\n"
+text = before + fresh_unreleased + "\n---\n\n" + new_release + "\n---\n" + rest
 ul = f"[Unreleased]: https://github.com/{repo}/compare/v{new}...HEAD"
 nl = f"[{new}]: https://github.com/{repo}/compare/v{prev}...v{new}"
 text = re.sub(r"^\[Unreleased\]:.*$", ul, text, count=1, flags=re.M) if re.search(r"^\[Unreleased\]:", text, re.M) else text.rstrip() + "\n" + ul + "\n"
