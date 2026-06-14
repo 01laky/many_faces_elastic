@@ -2,7 +2,7 @@
 
 <!-- readme-badges:start -->
 
-[![version](https://img.shields.io/badge/version-0.6.0-blue)](./VERSION)
+[![version](https://img.shields.io/badge/version-0.6.1-blue)](./VERSION)
 ![Go](https://img.shields.io/badge/Go-1.25-00ADD8)
 ![Elasticsearch](https://img.shields.io/badge/Elasticsearch-8.15-005571)
 ![gRPC](https://img.shields.io/badge/gRPC-TLS-244c5a)
@@ -12,7 +12,7 @@
 
 <!-- readme-badges:end -->
 
-**Version:** [`0.6.0`](./VERSION) · [Changelog](./CHANGELOG.md)
+**Version:** [`0.6.1`](./VERSION) · [Changelog](./CHANGELOG.md)
 
 **Author:** Ladislav Kostolny · [01laky@gmail.com](mailto:01laky@gmail.com)
 
